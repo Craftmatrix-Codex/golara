@@ -5,7 +5,7 @@ import { proxySupadataRequest } from '@/app/api/supadata/supadataProxy'
 const controlPlaneUrl = process.env.SUPADATA_CONTROL_PLANE_URL || 'http://control-plane:8090'
 
 async function handle({ request, params }: { request: Request; params: { _splat?: string } }) {
-  const path = params._splat ? `/${params._splat}` : '/'
+  const path = params._splat ? `/api/${params._splat}` : '/api/projects'
   return proxySupadataRequest(request, {
     baseUrl: controlPlaneUrl,
     token: process.env.SUPADATA_CONTROL_PLANE_TOKEN,
