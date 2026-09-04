@@ -172,7 +172,10 @@ const port = Number(process.env.PORT || 8090)
 const dataDir = process.env.SUPADATA_DATA_DIR || './.supadata'
 const registry = await createRegistry({
   dataDir,
-  composeCommand: process.env.SUPADATA_COMPOSE_COMMAND || 'docker-compose',
+  composeCommand:
+    process.env.SUPADATA_COMPOSE_COMMAND === 'docker-compose'
+      ? 'supadata-compose'
+      : process.env.SUPADATA_COMPOSE_COMMAND || 'supadata-compose',
 })
 const handler = createControlPlaneHandler(registry)
 const server = createServer(async (request, response) => {
