@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { cp, mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -251,182 +251,191 @@ export async function createRegistry({
   }
 
   async function createFullStack(project, projectDir, port) {
-    const setupRoot = path.join(os.tmpdir(), `supadata-setup-${project.id}-${process.pid}`)
-    await execFileAsync(
-      'sh',
-      [SETUP_SCRIPT, '-y', '--skip-deps', '--project-dir', setupRoot, '--ref', 'stable'],
-      {
-        cwd: path.dirname(SETUP_SCRIPT),
-        stdio: 'ignore',
-        env: { ...process.env, SUPABASE_REPO_URL: 'https://github.com/renzaspiras/supabase' },
-      }
-    )
-    const generatedDir = path.join(path.dirname(SETUP_SCRIPT), setupRoot)
-    await cp(generatedDir, projectDir, { recursive: true })
-    const generatedComposeFile = path.join(projectDir, 'docker-compose.yml')
-    const composeFile = path.join(projectDir, 'compose.yml')
-    const envFile = path.join(projectDir, '.env')
-    const [compose, env] = await Promise.all([
-      readFile(generatedComposeFile, 'utf8'),
-      readFile(envFile, 'utf8'),
-    ])
-    let sharedPassword
-    let sharedStorageAccessKey
-    let sharedStorageSecretKey
-    if (databaseMode === 'shared') {
-      await mkdir(path.join(sharedDatabaseDir, 'volumes', 'db'), { recursive: true })
-      await cp(
-        path.join(projectDir, 'volumes', 'db'),
-        path.join(sharedDatabaseDir, 'volumes', 'db'),
+    const setupWorkspace = await mkdtemp(path.join(os.tmpdir(), 'supadata-setup-'))
+    const setupRoot = `supabase-${project.id}`
+    try {
+      await execFileAsync(
+        'sh',
+        [SETUP_SCRIPT, '-y', '--skip-deps', '--project-dir', setupRoot, '--ref', 'stable'],
         {
-          recursive: true,
-          force: true,
+          cwd: setupWorkspace,
+          stdio: 'ignore',
+          env: {
+            ...process.env,
+            SUPABASE_LOCAL_DOCKER_DIR: path.dirname(SETUP_SCRIPT),
+            SUPABASE_REPO_URL: 'https://github.com/renzaspiras/supabase',
+          },
         }
       )
-      await writeFile(
-        path.join(sharedDatabaseDir, 'volumes', 'db', '00-supadata-roles.sql'),
-        `SELECT 'CREATE DATABASE _supabase WITH OWNER supabase_admin' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '_supabase')\\gexec\n\\connect _supabase\nCREATE SCHEMA IF NOT EXISTS _analytics AUTHORIZATION supabase_admin;\nCREATE SCHEMA IF NOT EXISTS _supavisor AUTHORIZATION supabase_admin;\n\\connect postgres\n\\set pgpass \`echo "$POSTGRES_PASSWORD"\`\nDO $do$ BEGIN\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'authenticator') THEN CREATE ROLE authenticator LOGIN; END IF;\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'pgbouncer') THEN CREATE ROLE pgbouncer LOGIN; END IF;\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'supabase_admin') THEN CREATE ROLE supabase_admin LOGIN; END IF;\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'supabase_auth_admin') THEN CREATE ROLE supabase_auth_admin LOGIN; END IF;\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'supabase_functions_admin') THEN CREATE ROLE supabase_functions_admin LOGIN; END IF;\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'supabase_storage_admin') THEN CREATE ROLE supabase_storage_admin LOGIN; END IF;\nEND $do$;\nALTER ROLE authenticator WITH PASSWORD :'pgpass';\nALTER ROLE pgbouncer WITH PASSWORD :'pgpass';\nALTER ROLE supabase_admin WITH PASSWORD :'pgpass';\nALTER ROLE supabase_auth_admin WITH PASSWORD :'pgpass';\nALTER ROLE supabase_functions_admin WITH PASSWORD :'pgpass';\nALTER ROLE supabase_storage_admin WITH PASSWORD :'pgpass';\n`,
-        'utf8'
-      )
-      const sharedEnvFile = path.join(sharedDatabaseDir, '.env')
-      try {
-        const sharedEnv = await readFile(sharedEnvFile, 'utf8')
-        sharedPassword = sharedEnv.match(/^POSTGRES_PASSWORD=(.+)$/m)?.[1]
-      } catch (error) {
-        if (error.code !== 'ENOENT') throw error
-      }
-      if (!sharedPassword) {
-        sharedPassword = secret()
-        await writeFile(
-          sharedEnvFile,
-          `POSTGRES_PASSWORD=${sharedPassword}\nJWT_SECRET=${secret()}\n`,
+      const generatedDir = path.join(setupWorkspace, setupRoot)
+      await cp(generatedDir, projectDir, { recursive: true })
+      const generatedComposeFile = path.join(projectDir, 'docker-compose.yml')
+      const composeFile = path.join(projectDir, 'compose.yml')
+      const envFile = path.join(projectDir, '.env')
+      const [compose, env] = await Promise.all([
+        readFile(generatedComposeFile, 'utf8'),
+        readFile(envFile, 'utf8'),
+      ])
+      let sharedPassword
+      let sharedStorageAccessKey
+      let sharedStorageSecretKey
+      if (databaseMode === 'shared') {
+        await mkdir(path.join(sharedDatabaseDir, 'volumes', 'db'), { recursive: true })
+        await cp(
+          path.join(projectDir, 'volumes', 'db'),
+          path.join(sharedDatabaseDir, 'volumes', 'db'),
           {
-            mode: 0o600,
+            recursive: true,
+            force: true,
           }
         )
         await writeFile(
-          path.join(sharedDatabaseDir, 'compose.yml'),
-          `services:\n  postgres:\n    image: supabase/postgres:17.6.1.136\n    container_name: supadata-postgres\n    restart: unless-stopped\n    environment:\n      POSTGRES_PASSWORD: \${POSTGRES_PASSWORD}\n      POSTGRES_DB: postgres\n    volumes:\n      - ./volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:ro\n      - ./volumes/db/webhooks.sql:/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:ro\n      - ./volumes/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:ro\n      - ./volumes/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:ro\n      - ./volumes/db/_supabase.sql:/docker-entrypoint-initdb.d/migrations/97-_supabase.sql:ro\n      - ./volumes/db/logs.sql:/docker-entrypoint-initdb.d/migrations/99-logs.sql:ro\n      - ./volumes/db/pooler.sql:/docker-entrypoint-initdb.d/migrations/99-pooler.sql:ro\n      - ./volumes/db/00-supadata-roles.sql:/docker-entrypoint-initdb.d/init-scripts/00-supadata-roles.sql:ro\n      - supadata-postgres-data:/var/lib/postgresql/data\n    networks: [supadata-postgres]\n    healthcheck:\n      test: [\"CMD\", \"pg_isready\", \"-U\", \"supabase_admin\", \"-d\", \"postgres\"]\n      interval: 5s\n      timeout: 5s\n      retries: 20\nnetworks:\n  supadata-postgres:\n    name: supadata-postgres\nvolumes:\n  supadata-postgres-data:\n`,
+          path.join(sharedDatabaseDir, 'volumes', 'db', '00-supadata-roles.sql'),
+          `SELECT 'CREATE DATABASE _supabase WITH OWNER supabase_admin' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '_supabase')\\gexec\n\\connect _supabase\nCREATE SCHEMA IF NOT EXISTS _analytics AUTHORIZATION supabase_admin;\nCREATE SCHEMA IF NOT EXISTS _supavisor AUTHORIZATION supabase_admin;\n\\connect postgres\n\\set pgpass \`echo "$POSTGRES_PASSWORD"\`\nDO $do$ BEGIN\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'authenticator') THEN CREATE ROLE authenticator LOGIN; END IF;\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'pgbouncer') THEN CREATE ROLE pgbouncer LOGIN; END IF;\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'supabase_admin') THEN CREATE ROLE supabase_admin LOGIN; END IF;\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'supabase_auth_admin') THEN CREATE ROLE supabase_auth_admin LOGIN; END IF;\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'supabase_functions_admin') THEN CREATE ROLE supabase_functions_admin LOGIN; END IF;\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'supabase_storage_admin') THEN CREATE ROLE supabase_storage_admin LOGIN; END IF;\nEND $do$;\nALTER ROLE authenticator WITH PASSWORD :'pgpass';\nALTER ROLE pgbouncer WITH PASSWORD :'pgpass';\nALTER ROLE supabase_admin WITH PASSWORD :'pgpass';\nALTER ROLE supabase_auth_admin WITH PASSWORD :'pgpass';\nALTER ROLE supabase_functions_admin WITH PASSWORD :'pgpass';\nALTER ROLE supabase_storage_admin WITH PASSWORD :'pgpass';\n`,
           'utf8'
         )
-      }
-    }
-    if (storageMode === 'shared') {
-      await mkdir(path.join(sharedStorageDir, 'data'), { recursive: true })
-      const sharedStorageEnvFile = path.join(sharedStorageDir, '.env')
-      let sharedStorageEnv = ''
-      try {
-        sharedStorageEnv = await readFile(sharedStorageEnvFile, 'utf8')
-      } catch (error) {
-        if (error.code !== 'ENOENT') throw error
-      }
-      sharedStorageAccessKey = sharedStorageEnv.match(/^S3_ACCESS_KEY=(.+)$/m)?.[1]
-      sharedStorageSecretKey = sharedStorageEnv.match(/^S3_SECRET_KEY=(.+)$/m)?.[1]
-      if (!sharedStorageAccessKey || !sharedStorageSecretKey) {
-        sharedStorageAccessKey = 'supadata_shared'
-        sharedStorageSecretKey = secret()
-        await writeFile(
-          sharedStorageEnvFile,
-          `S3_ACCESS_KEY=${sharedStorageAccessKey}\nS3_SECRET_KEY=${sharedStorageSecretKey}\n`,
-          { mode: 0o600 }
-        )
-        await writeFile(
-          path.join(sharedStorageDir, 's3.json'),
-          JSON.stringify(
+        const sharedEnvFile = path.join(sharedDatabaseDir, '.env')
+        try {
+          const sharedEnv = await readFile(sharedEnvFile, 'utf8')
+          sharedPassword = sharedEnv.match(/^POSTGRES_PASSWORD=(.+)$/m)?.[1]
+        } catch (error) {
+          if (error.code !== 'ENOENT') throw error
+        }
+        if (!sharedPassword) {
+          sharedPassword = secret()
+          await writeFile(
+            sharedEnvFile,
+            `POSTGRES_PASSWORD=${sharedPassword}\nJWT_SECRET=${secret()}\n`,
             {
-              identities: [
-                {
-                  name: 'supadata',
-                  credentials: [
-                    { accessKey: sharedStorageAccessKey, secretKey: sharedStorageSecretKey },
-                  ],
-                  actions: ['Read', 'Write', 'List', 'Tagging'],
-                },
-              ],
-            },
-            null,
-            2
-          ) + '\n',
-          { mode: 0o600 }
-        )
-        await writeFile(
-          path.join(sharedStorageDir, 'compose.yml'),
-          `services:\n  seaweedfs:\n    image: chrislusf/seaweedfs:3.80\n    container_name: supadata-seaweedfs\n    command: server -dir=/data -s3 -s3.config=/etc/seaweedfs/s3.json\n    restart: unless-stopped\n    volumes:\n      - ./data:/data\n      - ./s3.json:/etc/seaweedfs/s3.json:ro\n    expose: [8333]
+              mode: 0o600,
+            }
+          )
+          await writeFile(
+            path.join(sharedDatabaseDir, 'compose.yml'),
+            `services:\n  postgres:\n    image: supabase/postgres:17.6.1.136\n    container_name: supadata-postgres\n    restart: unless-stopped\n    environment:\n      POSTGRES_PASSWORD: \${POSTGRES_PASSWORD}\n      POSTGRES_DB: postgres\n    volumes:\n      - ./volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:ro\n      - ./volumes/db/webhooks.sql:/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:ro\n      - ./volumes/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:ro\n      - ./volumes/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:ro\n      - ./volumes/db/_supabase.sql:/docker-entrypoint-initdb.d/migrations/97-_supabase.sql:ro\n      - ./volumes/db/logs.sql:/docker-entrypoint-initdb.d/migrations/99-logs.sql:ro\n      - ./volumes/db/pooler.sql:/docker-entrypoint-initdb.d/migrations/99-pooler.sql:ro\n      - ./volumes/db/00-supadata-roles.sql:/docker-entrypoint-initdb.d/init-scripts/00-supadata-roles.sql:ro\n      - supadata-postgres-data:/var/lib/postgresql/data\n    networks: [supadata-postgres]\n    healthcheck:\n      test: [\"CMD\", \"pg_isready\", \"-U\", \"supabase_admin\", \"-d\", \"postgres\"]\n      interval: 5s\n      timeout: 5s\n      retries: 20\nnetworks:\n  supadata-postgres:\n    name: supadata-postgres\nvolumes:\n  supadata-postgres-data:\n`,
+            'utf8'
+          )
+        }
+      }
+      if (storageMode === 'shared') {
+        await mkdir(path.join(sharedStorageDir, 'data'), { recursive: true })
+        const sharedStorageEnvFile = path.join(sharedStorageDir, '.env')
+        let sharedStorageEnv = ''
+        try {
+          sharedStorageEnv = await readFile(sharedStorageEnvFile, 'utf8')
+        } catch (error) {
+          if (error.code !== 'ENOENT') throw error
+        }
+        sharedStorageAccessKey = sharedStorageEnv.match(/^S3_ACCESS_KEY=(.+)$/m)?.[1]
+        sharedStorageSecretKey = sharedStorageEnv.match(/^S3_SECRET_KEY=(.+)$/m)?.[1]
+        if (!sharedStorageAccessKey || !sharedStorageSecretKey) {
+          sharedStorageAccessKey = 'supadata_shared'
+          sharedStorageSecretKey = secret()
+          await writeFile(
+            sharedStorageEnvFile,
+            `S3_ACCESS_KEY=${sharedStorageAccessKey}\nS3_SECRET_KEY=${sharedStorageSecretKey}\n`,
+            { mode: 0o600 }
+          )
+          await writeFile(
+            path.join(sharedStorageDir, 's3.json'),
+            JSON.stringify(
+              {
+                identities: [
+                  {
+                    name: 'supadata',
+                    credentials: [
+                      { accessKey: sharedStorageAccessKey, secretKey: sharedStorageSecretKey },
+                    ],
+                    actions: ['Read', 'Write', 'List', 'Tagging'],
+                  },
+                ],
+              },
+              null,
+              2
+            ) + '\n',
+            { mode: 0o600 }
+          )
+          await writeFile(
+            path.join(sharedStorageDir, 'compose.yml'),
+            `services:\n  seaweedfs:\n    image: chrislusf/seaweedfs:3.80\n    container_name: supadata-seaweedfs\n    command: server -dir=/data -s3 -s3.config=/etc/seaweedfs/s3.json\n    restart: unless-stopped\n    volumes:\n      - ./data:/data\n      - ./s3.json:/etc/seaweedfs/s3.json:ro\n    expose: [8333]
     networks: [supadata-storage]\n    healthcheck:\n      test: [\"CMD\", \"wget\", \"--spider\", \"-q\", \"http://127.0.0.1:9333/cluster/status\"]\n      interval: 5s\n      timeout: 5s\n      retries: 20\nnetworks:\n  supadata-storage:\n    name: supadata-storage\n`,
-          'utf8'
+            'utf8'
+          )
+        }
+      }
+      const gatewayPort = port
+      const postgresPort = port + 1
+      const poolerPort = port + 2
+      const values = {
+        STUDIO_DEFAULT_ORGANIZATION: 'Supadata',
+        STUDIO_DEFAULT_PROJECT: project.name,
+        API_EXTERNAL_URL: `${publicProtocol}://${publicHost}:${gatewayPort}`,
+        SUPABASE_PUBLIC_URL: `${publicProtocol}://${publicHost}:${gatewayPort}`,
+        SITE_URL: `${publicProtocol}://${publicHost}:${gatewayPort}`,
+        API_GW_HTTP_PORT: gatewayPort,
+        KONG_HTTP_PORT: gatewayPort,
+        POSTGRES_PORT: 5432,
+        POOLER_TENANT_ID: project.id,
+        POOLER_PUBLIC_PORT: postgresPort,
+        META_HTTP_PORT: port + 3,
+        POOLER_PROXY_PORT_TRANSACTION: poolerPort,
+        POSTGRES_DB: project.id,
+        GLOBAL_S3_BUCKET: `supadata-${project.id}`,
+        STORAGE_TENANT_ID: project.id,
+        MINIO_ROOT_USER: `supadata_${project.id.replaceAll('-', '_')}`,
+        MINIO_ROOT_PASSWORD: secret(),
+        S3_PROTOCOL_ACCESS_KEY_ID:
+          storageMode === 'shared'
+            ? sharedStorageAccessKey
+            : `supadata_${project.id.replaceAll('-', '_')}`,
+        S3_PROTOCOL_ACCESS_KEY_SECRET: storageMode === 'shared' ? sharedStorageSecretKey : secret(),
+        SUPABASE_PROJECT_ID: project.id,
+        SUPADATA_PROXY_URL:
+          process.env.SUPADATA_PROXY_URL || 'http://host.docker.internal:8090/proxy',
+        SUPADATA_META_PROXY_URL:
+          process.env.SUPADATA_META_PROXY_URL || 'http://host.docker.internal:8090/proxy-meta',
+      }
+      let projectCompose = isolateCompose(compose, project, { storageMode })
+      const projectValues =
+        databaseMode === 'shared'
+          ? { ...values, POSTGRES_HOST: 'supadata-postgres', POSTGRES_PASSWORD: sharedPassword }
+          : values
+      if (databaseMode === 'shared') {
+        projectCompose = projectCompose
+          .replaceAll('PG_META_DB_USER: postgres', 'PG_META_DB_USER: supabase_admin')
+          .replaceAll(
+            'POSTGRES_USER_READ_WRITE: postgres',
+            'POSTGRES_USER_READ_WRITE: supabase_admin'
+          )
+          .replace(/\n  db:\n[\s\S]*?\n  supavisor:/, '\n  supavisor:')
+          .replace(
+            /\n    depends_on:\n      db:\n(?:        #.*\n)?        condition: service_healthy\n/g,
+            '\n'
+          )
+          .replace(/\n      seaweedfs:\n/, '\n    depends_on:\n      seaweedfs:\n')
+          .concat(
+            storageMode === 'shared'
+              ? '\nnetworks:\n  default:\n    name: supadata-postgres\n    external: true\n  supadata-storage:\n    name: supadata-storage\n    external: true\n'
+              : ''
+          )
+      }
+      if (storageMode === 'shared' && databaseMode !== 'shared') {
+        projectCompose = projectCompose.concat(
+          '\nnetworks:\n  supadata-storage:\n    name: supadata-storage\n    external: true\n'
         )
       }
-    }
-    const gatewayPort = port
-    const postgresPort = port + 1
-    const poolerPort = port + 2
-    const values = {
-      STUDIO_DEFAULT_ORGANIZATION: 'Supadata',
-      STUDIO_DEFAULT_PROJECT: project.name,
-      API_EXTERNAL_URL: `${publicProtocol}://${publicHost}:${gatewayPort}`,
-      SUPABASE_PUBLIC_URL: `${publicProtocol}://${publicHost}:${gatewayPort}`,
-      SITE_URL: `${publicProtocol}://${publicHost}:${gatewayPort}`,
-      API_GW_HTTP_PORT: gatewayPort,
-      KONG_HTTP_PORT: gatewayPort,
-      POSTGRES_PORT: 5432,
-      POOLER_TENANT_ID: project.id,
-      POOLER_PUBLIC_PORT: postgresPort,
-      META_HTTP_PORT: port + 3,
-      POOLER_PROXY_PORT_TRANSACTION: poolerPort,
-      POSTGRES_DB: project.id,
-      GLOBAL_S3_BUCKET: `supadata-${project.id}`,
-      STORAGE_TENANT_ID: project.id,
-      MINIO_ROOT_USER: `supadata_${project.id.replaceAll('-', '_')}`,
-      MINIO_ROOT_PASSWORD: secret(),
-      S3_PROTOCOL_ACCESS_KEY_ID:
-        storageMode === 'shared'
-          ? sharedStorageAccessKey
-          : `supadata_${project.id.replaceAll('-', '_')}`,
-      S3_PROTOCOL_ACCESS_KEY_SECRET: storageMode === 'shared' ? sharedStorageSecretKey : secret(),
-      SUPABASE_PROJECT_ID: project.id,
-      SUPADATA_PROXY_URL:
-        process.env.SUPADATA_PROXY_URL || 'http://host.docker.internal:8090/proxy',
-      SUPADATA_META_PROXY_URL:
-        process.env.SUPADATA_META_PROXY_URL || 'http://host.docker.internal:8090/proxy-meta',
-    }
-    let projectCompose = isolateCompose(compose, project, { storageMode })
-    const projectValues =
-      databaseMode === 'shared'
-        ? { ...values, POSTGRES_HOST: 'supadata-postgres', POSTGRES_PASSWORD: sharedPassword }
-        : values
-    if (databaseMode === 'shared') {
-      projectCompose = projectCompose
-        .replaceAll('PG_META_DB_USER: postgres', 'PG_META_DB_USER: supabase_admin')
-        .replaceAll(
-          'POSTGRES_USER_READ_WRITE: postgres',
-          'POSTGRES_USER_READ_WRITE: supabase_admin'
-        )
-        .replace(/\n  db:\n[\s\S]*?\n  supavisor:/, '\n  supavisor:')
-        .replace(
-          /\n    depends_on:\n      db:\n(?:        #.*\n)?        condition: service_healthy\n/g,
-          '\n'
-        )
-        .replace(/\n      seaweedfs:\n/, '\n    depends_on:\n      seaweedfs:\n')
-        .concat(
-          storageMode === 'shared'
-            ? '\nnetworks:\n  default:\n    name: supadata-postgres\n    external: true\n  supadata-storage:\n    name: supadata-storage\n    external: true\n'
-            : ''
-        )
-    }
-    if (storageMode === 'shared' && databaseMode !== 'shared') {
-      projectCompose = projectCompose.concat(
-        '\nnetworks:\n  supadata-storage:\n    name: supadata-storage\n    external: true\n'
-      )
-    }
-    await writeFile(composeFile, projectCompose, 'utf8')
-    await writeFile(envFile, upsertEnv(env, projectValues), { mode: 0o600 })
-    return {
-      composeFile,
-      composeEnvFile: envFile,
-      gatewayPort,
-      postgresPort,
-      metaPort: port + 3,
-      poolerPort,
+      await writeFile(composeFile, projectCompose, 'utf8')
+      await writeFile(envFile, upsertEnv(env, projectValues), { mode: 0o600 })
+      return {
+        composeFile,
+        composeEnvFile: envFile,
+        gatewayPort,
+        postgresPort,
+        metaPort: port + 3,
+        poolerPort,
+      }
+    } finally {
+      await rm(setupWorkspace, { recursive: true, force: true })
     }
   }
 

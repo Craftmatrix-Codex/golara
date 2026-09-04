@@ -287,6 +287,11 @@ resolved_sha() {
 }
 
 prepare_source() {
+    if [ -n "${SUPABASE_LOCAL_DOCKER_DIR:-}" ] && [ -d "$SUPABASE_LOCAL_DOCKER_DIR" ]; then
+        SRC_DIR="$SUPABASE_LOCAL_DOCKER_DIR"
+        RESOLVED_REF="local"
+        return
+    fi
     SRC_TMP=$(mktemp -d) || die "Could not create a temporary directory"
     dest="$SRC_TMP/supabase"
 
