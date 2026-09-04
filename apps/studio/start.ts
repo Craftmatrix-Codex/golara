@@ -20,6 +20,7 @@ import { isHostedSupportedApiPath } from '@/lib/hosted-api-allowlist'
 
 const studioAuthMiddleware = createMiddleware({ type: 'request' }).server(({ request, next }) => {
   const { pathname } = new URL(request.url)
+  if (process.env.SUPADATA_STUDIO_BUILDING === '1') return next()
   if (pathname === '/api/get-utc-time' || pathname === '/health') return next()
 
   const username = process.env.SUPADATA_STUDIO_AUTH_USERNAME

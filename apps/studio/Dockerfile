@@ -77,6 +77,9 @@ RUN mkdir -p /srv && \
 FROM dev AS build-tanstack
 # build:tanstack = vite build --mode production, then a smoke test that
 # boots the server bundle so module-scope crashes fail the image build.
+# The prerenderer has no browser credentials; this flag exists only in the
+# build stage and is not inherited by the production image.
+ENV SUPADATA_STUDIO_BUILDING=1
 RUN NODE_OPTIONS=--max-old-space-size=4096 pnpm --filter studio run build:tanstack
 
 # Assemble the runtime tree at /srv. Unlike Next's standalone output, the
