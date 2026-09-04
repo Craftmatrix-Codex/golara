@@ -88,7 +88,7 @@ services:
       studio:
         condition: service_healthy
     ports:
-      - ${API_GW_HTTP_PORT:-${KONG_HTTP_PORT:-8000}}:8000/tcp
+      - ${API_GW_HTTP_PORT:-8000}:8000/tcp
     volumes:
       - ./volumes/api/envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
       - ./volumes/api/envoy/cds.yaml:/etc/envoy/cds.yaml:ro

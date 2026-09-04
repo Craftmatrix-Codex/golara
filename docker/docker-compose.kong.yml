@@ -18,7 +18,7 @@ services:
       timeout: 5s
       retries: 5
     ports: !override
-      - ${API_GW_HTTP_PORT:-${KONG_HTTP_PORT:-8000}}:8000/tcp
+      - ${API_GW_HTTP_PORT:-8000}:8000/tcp
       - ${KONG_HTTPS_PORT:-8443}:8443/tcp
     volumes: !override
       - ./volumes/api/kong.yml:/home/kong/temp.yml:ro,z
