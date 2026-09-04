@@ -254,10 +254,11 @@ export async function createRegistry({
     const setupRoot = path.join(os.tmpdir(), `supadata-setup-${project.id}-${process.pid}`)
     await execFileAsync(
       'sh',
-      [SETUP_SCRIPT, '-y', '--skip-deps', '--project-dir', setupRoot, '--head'],
+      [SETUP_SCRIPT, '-y', '--skip-deps', '--project-dir', setupRoot, '--ref', 'stable'],
       {
         cwd: path.dirname(SETUP_SCRIPT),
         stdio: 'ignore',
+        env: { ...process.env, SUPABASE_REPO_URL: 'https://github.com/renzaspiras/supabase' },
       }
     )
     const generatedDir = path.join(path.dirname(SETUP_SCRIPT), setupRoot)
