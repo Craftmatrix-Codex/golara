@@ -1,10 +1,8 @@
 FROM node:22-bookworm-slim
 
-# The registry provisions project stacks through the Docker socket. The
-# docker-compose v1 executable is intentional: it is the default command used
-# by src/server.mjs and remains available alongside the Docker CLI.
+# Compose v2 is required for current Docker image metadata.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates curl docker.io docker-compose \
+  && apt-get install -y --no-install-recommends ca-certificates curl docker.io docker-compose-v2 \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -18,7 +16,7 @@ COPY apps/supadata-control-plane /app/apps/supadata-control-plane
 
 WORKDIR /app/apps/supadata-control-plane
 ENV NODE_ENV=production
-ENV SUPADATA_COMPOSE_COMMAND=docker-compose
+ENV SUPADATA_COMPOSE_COMMAND=supadata-compose
 ENV PORT=8090
 ENV SUPADATA_DATA_DIR=/var/lib/supadata
 VOLUME ["/var/lib/supadata"]
