@@ -11,6 +11,9 @@ WORKDIR /app
 # Build with the repository root as context so setup.sh and its compose
 # templates remain available to the control plane at runtime.
 COPY docker /app/docker
+RUN printf '#!/bin/sh\nexec docker compose "$@"\n' > /usr/local/bin/supadata-compose \
+    && chmod +x /usr/local/bin/supadata-compose
+
 COPY apps/supadata-control-plane /app/apps/supadata-control-plane
 
 WORKDIR /app/apps/supadata-control-plane
