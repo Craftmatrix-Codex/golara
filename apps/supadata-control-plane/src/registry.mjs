@@ -98,6 +98,8 @@ export async function createRegistry({
   composeCommand = 'docker-compose',
   databaseMode = process.env.SUPADATA_DATABASE_MODE || 'isolated',
   storageMode = process.env.SUPADATA_STORAGE_MODE || 'shared',
+  publicHost = process.env.SUPADATA_PUBLIC_HOST || '13.140.160.208',
+  publicProtocol = process.env.SUPADATA_PUBLIC_PROTOCOL || 'http',
 }) {
   const registryPath = path.join(dataDir, 'registry.json')
   const projectsDir = path.join(dataDir, 'projects')
@@ -360,9 +362,9 @@ export async function createRegistry({
     const values = {
       STUDIO_DEFAULT_ORGANIZATION: 'Supadata',
       STUDIO_DEFAULT_PROJECT: project.name,
-      API_EXTERNAL_URL: `http://127.0.0.1:${gatewayPort}`,
-      SUPABASE_PUBLIC_URL: `http://127.0.0.1:${gatewayPort}`,
-      SITE_URL: `http://127.0.0.1:${gatewayPort}`,
+      API_EXTERNAL_URL: `${publicProtocol}://${publicHost}:${gatewayPort}`,
+      SUPABASE_PUBLIC_URL: `${publicProtocol}://${publicHost}:${gatewayPort}`,
+      SITE_URL: `${publicProtocol}://${publicHost}:${gatewayPort}`,
       API_GW_HTTP_PORT: gatewayPort,
       KONG_HTTP_PORT: gatewayPort,
       POSTGRES_PORT: 5432,
