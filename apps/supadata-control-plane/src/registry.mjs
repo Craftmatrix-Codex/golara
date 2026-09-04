@@ -349,8 +349,10 @@ export async function createRegistry({
           recursive: true,
           force: true,
         })
+        const rolesBootstrapPath = path.join(sharedDbVolumeDir, '00-supadata-roles.sql')
+        await rm(rolesBootstrapPath, { recursive: true, force: true })
         await writeFile(
-          path.join(sharedDatabaseDir, 'volumes', 'db', '00-supadata-roles.sql'),
+          rolesBootstrapPath,
           `SELECT 'CREATE DATABASE _supabase WITH OWNER supabase_admin' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '_supabase')\\gexec\n\\connect _supabase\nCREATE SCHEMA IF NOT EXISTS _analytics AUTHORIZATION supabase_admin;\nCREATE SCHEMA IF NOT EXISTS _supavisor AUTHORIZATION supabase_admin;\n\\connect postgres\n\\set pgpass \`echo "$POSTGRES_PASSWORD"\`\nDO $do$ BEGIN\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'authenticator') THEN CREATE ROLE authenticator LOGIN; END IF;\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'pgbouncer') THEN CREATE ROLE pgbouncer LOGIN; END IF;\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'supabase_admin') THEN CREATE ROLE supabase_admin LOGIN; END IF;\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'supabase_auth_admin') THEN CREATE ROLE supabase_auth_admin LOGIN; END IF;\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'supabase_functions_admin') THEN CREATE ROLE supabase_functions_admin LOGIN; END IF;\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'supabase_storage_admin') THEN CREATE ROLE supabase_storage_admin LOGIN; END IF;\nEND $do$;\nALTER ROLE authenticator WITH PASSWORD :'pgpass';\nALTER ROLE pgbouncer WITH PASSWORD :'pgpass';\nALTER ROLE supabase_admin WITH PASSWORD :'pgpass';\nALTER ROLE supabase_auth_admin WITH PASSWORD :'pgpass';\nALTER ROLE supabase_functions_admin WITH PASSWORD :'pgpass';\nALTER ROLE supabase_storage_admin WITH PASSWORD :'pgpass';\n`,
           'utf8'
         )
