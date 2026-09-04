@@ -15,7 +15,9 @@
 # switch used everywhere else. Framework selection happens at image build
 # time (the two runtimes need different build outputs and dependency
 # trees), not at container start.
-ARG STUDIO_FRAMEWORK=next
+# TanStack is the production path for this deployment: it avoids the
+# monorepo Next production build exceeding Coolify's command timeout.
+ARG STUDIO_FRAMEWORK=tanstack
 
 FROM node:22-slim AS base
 ENV PNPM_HOME="/pnpm"
