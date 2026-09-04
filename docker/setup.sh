@@ -382,8 +382,8 @@ fi
 log "Creating project at $target"
 mkdir -p "$target"
 cp -rf "$SRC_DIR/." "$target/"
-if [ -f "$target/.env.example" ] && [ ! -f "$target/.env" ]; then
-    cp "$target/.env.example" "$target/.env"
+if [ ! -f "$target/.env" ] && [ -f "$SRC_DIR/.env.example" ]; then
+    cp "$SRC_DIR/.env.example" "$target/.env"
 fi
 
 cd "$target"
