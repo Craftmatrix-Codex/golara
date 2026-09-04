@@ -3,7 +3,13 @@
 .git
 .github
 about
-docker
+# The Supadata control plane invokes the repository setup script at runtime.
+# Keep setup assets available when building its image from the repository root.
+!docker/
+!docker/**
+# Keep generated local setup output out of the build context.
+docker/tmp/
+docker/tmp/**
 examples
 i18n
 **/node_modules

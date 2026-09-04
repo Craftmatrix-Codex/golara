@@ -10,6 +10,7 @@ import { ShimmeringLoader } from 'ui-patterns/ShimmeringLoader'
 import { AppLayoutDropdownTriggerButton } from './AppLayoutDropdown'
 import { sanitizeRoute } from './ProjectDropdown.utils'
 import { ProjectRowLink } from './ProjectRowLink'
+import { SupadataProjectSelector } from './SupadataProjectSelector'
 import { useEmbeddedCloseHandler } from './useEmbeddedCloseHandler'
 import { CommandItemLink } from '@/components/ui/CommandItemLink'
 import { OrganizationProjectSelector } from '@/components/ui/OrganizationProjectSelector'
@@ -69,8 +70,14 @@ function ProjectDropdownNewProjectActions({
   )
 }
 
-const ProjectDropdownNonPlatformView = ({ projectName }: { projectName: string }) => {
-  return <div className="text-sm px-3 py-1">{projectName}</div>
+const ProjectDropdownNonPlatformView = ({
+  projectId,
+  projectName,
+}: {
+  projectId?: string
+  projectName: string
+}) => {
+  return <SupadataProjectSelector currentId={projectId} currentName={projectName} />
 }
 
 interface ProjectDropdownPlatformViewProps {
@@ -193,6 +200,9 @@ export const ProjectDropdown = ({
       selectorProps={selectorProps}
     />
   ) : (
-    <ProjectDropdownNonPlatformView projectName={selectedProject?.name ?? ''} />
+    <ProjectDropdownNonPlatformView
+      projectId={selectedProject?.ref}
+      projectName={selectedProject?.name ?? ''}
+    />
   )
 }
