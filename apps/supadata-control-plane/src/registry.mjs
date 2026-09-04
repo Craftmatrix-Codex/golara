@@ -11,6 +11,9 @@ const PROJECT_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const execFileAsync = promisify(execFile)
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
 const SETUP_SCRIPT = path.join(REPOSITORY_ROOT, 'docker', 'setup.sh')
+const BUNDLED_ENVOY_ENTRYPOINT =
+  process.env.SUPADATA_ENVOY_ENTRYPOINT ||
+  path.join(REPOSITORY_ROOT, 'docker', 'volumes', 'api', 'envoy', 'docker-entrypoint.sh')
 const LEGACY_NESTED_GATEWAY_PORT = '${API_GW_HTTP_PORT:-${KONG_HTTP_PORT:-8000}}'
 const VALID_GATEWAY_PORT = '${API_GW_HTTP_PORT:-8000}'
 
@@ -299,13 +302,11 @@ export async function createRegistry({
       try {
         if ((await lstat(generatedEntrypoint)).isDirectory()) {
           await rm(generatedEntrypoint, { recursive: true, force: true })
-          await cp(
-            path.join(path.dirname(SETUP_SCRIPT), 'volumes/api/envoy/docker-entrypoint.sh'),
-            generatedEntrypoint
-          )
+          await cp(BUNDLED_ENVOY_ENTRYPOINT, generatedEntrypoint)
         }
       } catch (error) {
-        if (error.code !== 'ENOENT') throw error
+        if (error.code === 'ENOENT') await cp(BUNDLED_ENVOY_ENTRYPOINT, generatedEntrypoint)
+        else throw error
       }
       const generatedComposeFile = path.join(projectDir, 'docker-compose.yml')
       const composeFile = path.join(projectDir, 'compose.yml')

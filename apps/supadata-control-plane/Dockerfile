@@ -15,11 +15,14 @@ COPY docker /app/docker
 RUN printf '#!/bin/sh\nexec docker compose "$@"\n' > /usr/local/bin/supadata-compose \
     && chmod +x /usr/local/bin/supadata-compose
 
+COPY docker/volumes/api/envoy/docker-entrypoint.sh /app/supadata-envoy-entrypoint.sh
+RUN chmod +x /app/supadata-envoy-entrypoint.sh
 COPY apps/supadata-control-plane /app/apps/supadata-control-plane
 
 WORKDIR /app/apps/supadata-control-plane
 ENV NODE_ENV=production
 ENV SUPADATA_COMPOSE_COMMAND=supadata-compose
+ENV SUPADATA_ENVOY_ENTRYPOINT=/app/supadata-envoy-entrypoint.sh
 ENV PORT=8090
 ENV SUPADATA_DATA_DIR=/var/lib/supadata
 VOLUME ["/var/lib/supadata"]
