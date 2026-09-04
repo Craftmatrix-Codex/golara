@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { randomUUID } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import { cp, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -10,6 +10,8 @@ const PROJECT_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const execFileAsync = promisify(execFile)
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
 const SETUP_SCRIPT = path.join(REPOSITORY_ROOT, 'docker', 'setup.sh')
+const LEGACY_NESTED_GATEWAY_PORT = '${API_GW_HTTP_PORT:-${KONG_HTTP_PORT:-8000}}'
+const VALID_GATEWAY_PORT = '${API_GW_HTTP_PORT:-8000}'
 
 export function slugify(value) {
   return String(value)
@@ -37,6 +39,12 @@ function upsertEnv(contents, values) {
     else lines.push(replacement)
   }
   return `${lines.filter((line, index, all) => !(line === '' && index === all.length - 1)).join('\n')}\n`
+}
+
+async function repairLegacyCompose(composeFile) {
+  const contents = await readFile(composeFile, 'utf8')
+  const repaired = contents.replaceAll(LEGACY_NESTED_GATEWAY_PORT, VALID_GATEWAY_PORT)
+  if (repaired !== contents) await writeFile(composeFile, repaired, 'utf8')
 }
 
 function isolateCompose(contents, project, { storageMode }) {
@@ -448,6 +456,26 @@ export async function createRegistry({
     return registry.projects[index]
   }
 
+  async function getProjectCredentials(id) {
+    const registry = await readRegistry()
+    const project = registry.projects.find((candidate) => candidate.id === id)
+    if (!project) throw new Error(`project '${id}' not found`)
+    const env = Object.fromEntries((await readFile(project.composeEnvFile, 'utf8')).split('\n').flatMap((line) => { const m = line.match(/^([A-Z0-9_]+)=(.*)$/); return m ? [[m[1], m[2]]] : [] }))
+    return { id, apiKey: null, deployablePassword: null, postgres: { host: env.POSTGRES_HOST || '127.0.0.1', port: Number(env.POOLER_PUBLIC_PORT || env.POSTGRES_PORT || project.postgresPort), database: env.POSTGRES_DB || id, username: databaseMode === 'shared' ? `supadata_${id.replaceAll('-', '_')}` : 'postgres', password: env.SUPADATA_POSTGRES_PASSWORD || env.POSTGRES_PASSWORD || null } }
+  }
+
+  async function rotateProjectCredential(id, type) {
+    const registry = await readRegistry()
+    const project = registry.projects.find((candidate) => candidate.id === id)
+    if (!project) throw new Error(`project '${id}' not found`)
+    const normalized = type === 'apiKey' ? 'api-key' : type
+    const key = { 'api-key': 'SUPADATA_API_KEY', 'deployable-password': 'SUPADATA_DEPLOYABLE_PASSWORD', postgres: 'SUPADATA_POSTGRES_PASSWORD', 'postgres-password': 'SUPADATA_POSTGRES_PASSWORD' }[normalized]
+    if (!key) throw new Error('credential type must be api-key, deployable-password, or postgres')
+    const value = randomBytes(32).toString('base64url')
+    await writeFile(project.composeEnvFile, upsertEnv(await readFile(project.composeEnvFile, 'utf8'), { [key]: value }), { mode: 0o600 })
+    return { type: normalized === 'postgres-password' ? 'postgres' : normalized, value }
+  }
+
   async function createProject({ name, id: requestedId }) {
     const cleanName = String(name ?? '').trim()
     if (!cleanName) throw new Error('name is required')
@@ -532,6 +560,7 @@ export async function createRegistry({
     const project = (await listProjects()).find((candidate) => candidate.id === id)
     if (!project) throw new Error(`project '${id}' not found`)
     if (project.status === 'running' || project.status === 'provisioning') {
+      await repairLegacyCompose(project.composeFile)
       await execFileAsync(
         composeCommand,
         [
@@ -575,5 +604,7 @@ export async function createRegistry({
     currentProject,
     provisionProject,
     deleteProject,
+    getProjectCredentials,
+    rotateProjectCredential,
   }
 }

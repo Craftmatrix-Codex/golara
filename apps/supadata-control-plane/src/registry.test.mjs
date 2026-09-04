@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -67,6 +67,22 @@ test('registry provisions and deletes a project through compose', async () => {
   assert.deepEqual(await registry.listProjects(), [])
 })
 
+test('registry deletes legacy projects with invalid nested compose interpolation', async () => {
+  const dataDir = await mkdtemp(path.join(os.tmpdir(), 'supadata-legacy-'))
+  const projectDir = path.join(dataDir, 'projects', 'create-proof')
+  const composeFile = path.join(projectDir, 'compose.yml')
+  const composeCommand = path.join(dataDir, 'compose-check.sh')
+  await mkdir(projectDir, { recursive: true })
+  await writeFile(composeFile, 'services:\n  api-gw:\n    ports:\n      - ${API_GW_HTTP_PORT:-${KONG_HTTP_PORT:-8000}}:8000/tcp\n')
+  await writeFile(path.join(dataDir, 'registry.json'), `${JSON.stringify({ currentProjectId: 'create-proof', projects: [{ id: 'create-proof', name: 'Create Proof', status: 'running', composeFile, composeEnvFile: path.join(projectDir, '.env') }] })}\n`)
+  await writeFile(composeCommand, '#!/bin/sh\nfile=""\nwhile [ "$#" -gt 0 ]; do\n  [ "$1" = "--file" ] && file="$2"\n  shift\ndone\nif grep -q \'${API_GW_HTTP_PORT:-${KONG_HTTP_PORT:-8000}}\' "$file"; then\n  echo "invalid interpolation format" >&2\n  exit 1\nfi\nexit 0\n')
+  await chmod(composeCommand, 0o755)
+  const registry = await createRegistry({ dataDir, composeCommand, databaseMode: 'isolated' })
+  await registry.deleteProject('create-proof')
+  assert.deepEqual(await registry.listProjects(), [])
+  assert.equal(await readFile(composeFile, 'utf8'), 'services:\n  api-gw:\n    ports:\n      - ${API_GW_HTTP_PORT:-8000}:8000/tcp\n')
+})
+
 test('shared database mode uses one postgres service and isolated databases', async () => {
   const dataDir = await mkdtemp(path.join(os.tmpdir(), 'supadata-shared-'))
   const registry = await createRegistry({ dataDir, databaseMode: 'shared' })
@@ -80,4 +96,17 @@ test('shared database mode uses one postgres service and isolated databases', as
   assert.match(compose, /POSTGRES_DB: \$\{POSTGRES_DB\}/)
   assert.match(shared, /supabase\/postgres/)
   assert.match(shared, /supadata-postgres/)
+})
+
+test('registry rotates project credentials without listing secrets', async () => {
+  const dataDir = await mkdtemp(path.join(os.tmpdir(), 'supadata-credentials-'))
+  const registry = await createRegistry({ dataDir, composeCommand: 'true', databaseMode: 'isolated' })
+  await registry.createProject({ name: 'Credentials' })
+  const api = await registry.rotateProjectCredential('credentials', 'api-key')
+  const deploy = await registry.rotateProjectCredential('credentials', 'deployable-password')
+  assert.equal(api.type, 'api-key')
+  assert.equal(deploy.type, 'deployable-password')
+  assert.notEqual(api.value, deploy.value)
+  assert.equal('apiKey' in (await registry.listProjects())[0], false)
+  assert.equal((await registry.getProjectCredentials('credentials')).postgres.database, 'credentials')
 })

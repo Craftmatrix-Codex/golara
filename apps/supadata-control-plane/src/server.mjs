@@ -48,7 +48,11 @@ async function proxy(request, targetBase, targetPath) {
 
 export function createControlPlaneHandler(
   registry,
-  { token = process.env.SUPADATA_CONTROL_PLANE_TOKEN } = {}
+  {
+    token = process.env.SUPADATA_CONTROL_PLANE_TOKEN,
+    proxyHost =
+      process.env.SUPADATA_PROXY_TARGET_HOST || process.env.SUPADATA_PUBLIC_HOST || '127.0.0.1',
+  } = {}
 ) {
   return async function handle(request) {
     const origin = process.env.SUPADATA_ALLOWED_ORIGIN || '*'
@@ -112,13 +116,13 @@ export function createControlPlaneHandler(
       if (project && isProxy)
         return proxy(
           request,
-          `http://127.0.0.1:${project.gatewayPort}`,
+          `http://${proxyHost}:${project.gatewayPort}`,
           url.pathname.slice('/proxy'.length) || '/'
         )
       if (project && isMetaProxy)
         return proxy(
           request,
-          `http://127.0.0.1:${project.metaPort}`,
+          `http://${proxyHost}:${project.metaPort}`,
           url.pathname.slice('/proxy-meta'.length) || '/'
         )
       return jsonResponse(404, { error: 'not found' }, origin)

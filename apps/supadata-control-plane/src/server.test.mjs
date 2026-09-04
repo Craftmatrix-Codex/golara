@@ -29,11 +29,26 @@ test('missing control-plane token rejects protected requests even with a bearer 
   )
 })
 
-test('proxy requests also require the control-plane bearer token', async () => {
-  const handler = createControlPlaneHandler(
-    { currentProject: async () => null },
-    { token: 'secret' }
-  )
-  assert.equal((await handler(request('/proxy/rest/v1/items'))).status, 401)
-  assert.equal((await handler(request('/proxy-meta'))).status, 401)
+test('proxy requests use the configured host while preserving project ports', async () => {
+  const originalFetch = globalThis.fetch
+  const requests = []
+  globalThis.fetch = async (url) => {
+    requests.push(url)
+    return new Response('ok', { status: 200 })
+  }
+  try {
+    const handler = createControlPlaneHandler(
+      { currentProject: async () => ({ gatewayPort: 8100, metaPort: 8103 }) },
+      { token: 'secret', proxyHost: '203.0.113.10' }
+    )
+    const headers = { authorization: 'Bearer secret' }
+    assert.equal((await handler(request('/proxy/rest/v1/items', { headers }))).status, 200)
+    assert.equal((await handler(request('/proxy-meta/tables', { headers }))).status, 200)
+    assert.deepEqual(requests, [
+      'http://203.0.113.10:8100/rest/v1/items',
+      'http://203.0.113.10:8103/tables',
+    ])
+  } finally {
+    globalThis.fetch = originalFetch
+  }
 })
