@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
 import { randomBytes, randomUUID } from 'node:crypto'
-import { cp, lstat, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
@@ -299,15 +299,8 @@ export async function createRegistry({
       const generatedDir = path.join(setupWorkspace, setupRoot)
       await cp(generatedDir, projectDir, { recursive: true })
       const generatedEntrypoint = path.join(projectDir, 'volumes/api/envoy/docker-entrypoint.sh')
-      try {
-        if ((await lstat(generatedEntrypoint)).isDirectory()) {
-          await rm(generatedEntrypoint, { recursive: true, force: true })
-          await cp(BUNDLED_ENVOY_ENTRYPOINT, generatedEntrypoint)
-        }
-      } catch (error) {
-        if (error.code === 'ENOENT') await cp(BUNDLED_ENVOY_ENTRYPOINT, generatedEntrypoint)
-        else throw error
-      }
+      await rm(generatedEntrypoint, { recursive: true, force: true })
+      await cp(BUNDLED_ENVOY_ENTRYPOINT, generatedEntrypoint)
       const generatedComposeFile = path.join(projectDir, 'docker-compose.yml')
       const composeFile = path.join(projectDir, 'compose.yml')
       const envFile = path.join(projectDir, '.env')
