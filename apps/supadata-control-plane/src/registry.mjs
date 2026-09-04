@@ -602,17 +602,26 @@ export async function createRegistry({
       )
     }
     if (databaseMode === 'shared') {
-      await execFileAsync('docker', [
-        'exec',
-        'supadata-postgres',
-        'psql',
-        '-U',
-        'supabase_admin',
-        '-d',
-        'postgres',
-        '-c',
-        `DROP DATABASE IF EXISTS "${id}"`,
-      ])
+      try {
+        await execFileAsync('docker', [
+          'exec',
+          'supadata-postgres',
+          'psql',
+          '-U',
+          'supabase_admin',
+          '-d',
+          'postgres',
+          '-c',
+          `DROP DATABASE IF EXISTS "${id}"`,
+        ])
+      } catch (error) {
+        if (
+          !/No such container: supadata-postgres/.test(
+            error instanceof Error ? error.message : String(error)
+          )
+        )
+          throw error
+      }
     }
     const registry = await readRegistry()
     registry.projects = registry.projects.filter((candidate) => candidate.id !== id)
