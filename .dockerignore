@@ -20,6 +20,7 @@ tests
 **/.next
 .vercel
 **/.env.*
+!docker/.env.example
 
 .dockerignore
 apps/studio/Dockerfile
