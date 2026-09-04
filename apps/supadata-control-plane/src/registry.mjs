@@ -398,8 +398,10 @@ export async function createRegistry({
             `S3_ACCESS_KEY=${sharedStorageAccessKey}\nS3_SECRET_KEY=${sharedStorageSecretKey}\n`,
             { mode: 0o600 }
           )
+          const sharedStorageConfigPath = path.join(sharedStorageDir, 's3.json')
+          await rm(sharedStorageConfigPath, { recursive: true, force: true })
           await writeFile(
-            path.join(sharedStorageDir, 's3.json'),
+            sharedStorageConfigPath,
             JSON.stringify(
               {
                 identities: [
