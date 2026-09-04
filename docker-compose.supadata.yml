@@ -1,0 +1,62 @@
+services:
+  control-plane:
+    build:
+      context: .
+      dockerfile: apps/supadata-control-plane/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "8090"
+      SUPADATA_DATA_DIR: /var/lib/supadata
+      SUPADATA_DATABASE_MODE: ${SUPADATA_DATABASE_MODE:-shared}
+      SUPADATA_STORAGE_MODE: ${SUPADATA_STORAGE_MODE:-shared}
+      SUPADATA_ALLOWED_ORIGIN: ${SUPADATA_ALLOWED_ORIGIN:-https://supabase.craftmatrix.org}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - supadata-control-plane-data:/var/lib/supadata
+    expose:
+      - "8090"
+    networks:
+      - supadata
+      - coolify
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.supadata-api.rule: Host(`api.supabase.craftmatrix.org`)
+      traefik.http.routers.supadata-api.entrypoints: https
+      traefik.http.routers.supadata-api.tls: "true"
+      traefik.http.routers.supadata-api.tls.certresolver: letsencrypt
+      traefik.http.routers.supadata-api.service: supadata-api
+      traefik.http.services.supadata-api.loadbalancer.server.port: "8090"
+
+  studio:
+    build:
+      context: .
+      dockerfile: apps/studio/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      NEXT_PUBLIC_SUPADATA_CONTROL_PLANE_URL: https://api.supabase.craftmatrix.org
+      NEXT_PUBLIC_IS_PLATFORM: "false"
+    expose:
+      - "3000"
+    networks:
+      - supadata
+      - coolify
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.supadata-studio.rule: Host(`supabase.craftmatrix.org`)
+      traefik.http.routers.supadata-studio.entrypoints: https
+      traefik.http.routers.supadata-studio.tls: "true"
+      traefik.http.routers.supadata-studio.tls.certresolver: letsencrypt
+      traefik.http.routers.supadata-studio.service: supadata-studio
+      traefik.http.services.supadata-studio.loadbalancer.server.port: "3000"
+
+volumes:
+  supadata-control-plane-data:
+
+networks:
+  supadata:
+    name: supadata
+  coolify:
+    external: true
