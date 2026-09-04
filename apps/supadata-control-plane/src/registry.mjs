@@ -18,6 +18,12 @@ const LEGACY_NESTED_GATEWAY_PORT = '${API_GW_HTTP_PORT:-${KONG_HTTP_PORT:-8000}}
 const VALID_GATEWAY_PORT = '${API_GW_HTTP_PORT:-8000}'
 
 async function portAvailable(port) {
+  try {
+    const { stdout } = await execFileAsync('docker', ['ps', '--format', '{{.Ports}}'])
+    if ([...stdout.matchAll(/:(\d+)->/g)].some((match) => Number(match[1]) === port)) return false
+  } catch {
+    // Fall back to a socket probe when Docker is unavailable in unit tests.
+  }
   return await new Promise((resolve) => {
     const server = net.createServer()
     server.once('error', () => resolve(false))
