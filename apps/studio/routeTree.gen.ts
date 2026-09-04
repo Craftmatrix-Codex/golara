@@ -74,6 +74,7 @@ import { Route as ProjectRefAdvisorsRouteImport } from './routes/project/$ref/ad
 import { Route as OrgChar91_Char93SplatRouteImport } from './routes/org.[_].$'
 import { Route as IntegrationsVercelInstallRouteImport } from './routes/integrations/vercel/install'
 import { Route as IntegrationsGithubAuthorizeRouteImport } from './routes/integrations/github/authorize'
+import { Route as ApiSupadataSplatRouteImport } from './routes/api/supadata/$'
 import { Route as ApiPlatformDeploymentModeRouteImport } from './routes/api/platform/deployment-mode'
 import { Route as ApiIntegrationsStripeSyncRouteImport } from './routes/api/integrations/stripe-sync'
 import { Route as ApiEdgeFunctionsTestRouteImport } from './routes/api/edge-functions/test'
@@ -659,6 +660,11 @@ const IntegrationsGithubAuthorizeRoute =
     path: '/integrations/github/authorize',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiSupadataSplatRoute = ApiSupadataSplatRouteImport.update({
+  id: '/api/supadata/$',
+  path: '/api/supadata/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPlatformDeploymentModeRoute =
   ApiPlatformDeploymentModeRouteImport.update({
     id: '/api/platform/deployment-mode',
@@ -2164,6 +2170,7 @@ export interface FileRoutesByFullPath {
   '/api/edge-functions/test': typeof ApiEdgeFunctionsTestRoute
   '/api/integrations/stripe-sync': typeof ApiIntegrationsStripeSyncRoute
   '/api/platform/deployment-mode': typeof ApiPlatformDeploymentModeRoute
+  '/api/supadata/$': typeof ApiSupadataSplatRoute
   '/integrations/github/authorize': typeof IntegrationsGithubAuthorizeRoute
   '/integrations/vercel/install': typeof IntegrationsVercelInstallRoute
   '/org/_/$': typeof OrgChar91_Char93SplatRoute
@@ -2481,6 +2488,7 @@ export interface FileRoutesByTo {
   '/api/edge-functions/test': typeof ApiEdgeFunctionsTestRoute
   '/api/integrations/stripe-sync': typeof ApiIntegrationsStripeSyncRoute
   '/api/platform/deployment-mode': typeof ApiPlatformDeploymentModeRoute
+  '/api/supadata/$': typeof ApiSupadataSplatRoute
   '/integrations/github/authorize': typeof IntegrationsGithubAuthorizeRoute
   '/integrations/vercel/install': typeof IntegrationsVercelInstallRoute
   '/org/_/$': typeof OrgChar91_Char93SplatRoute
@@ -2791,6 +2799,7 @@ export interface FileRoutesById {
   '/api/edge-functions/test': typeof ApiEdgeFunctionsTestRoute
   '/api/integrations/stripe-sync': typeof ApiIntegrationsStripeSyncRoute
   '/api/platform/deployment-mode': typeof ApiPlatformDeploymentModeRoute
+  '/api/supadata/$': typeof ApiSupadataSplatRoute
   '/integrations/github/authorize': typeof IntegrationsGithubAuthorizeRoute
   '/integrations/vercel/install': typeof IntegrationsVercelInstallRoute
   '/org/_/$': typeof OrgChar91_Char93SplatRoute
@@ -3112,6 +3121,7 @@ export interface FileRouteTypes {
     | '/api/edge-functions/test'
     | '/api/integrations/stripe-sync'
     | '/api/platform/deployment-mode'
+    | '/api/supadata/$'
     | '/integrations/github/authorize'
     | '/integrations/vercel/install'
     | '/org/_/$'
@@ -3429,6 +3439,7 @@ export interface FileRouteTypes {
     | '/api/edge-functions/test'
     | '/api/integrations/stripe-sync'
     | '/api/platform/deployment-mode'
+    | '/api/supadata/$'
     | '/integrations/github/authorize'
     | '/integrations/vercel/install'
     | '/org/_/$'
@@ -3738,6 +3749,7 @@ export interface FileRouteTypes {
     | '/api/edge-functions/test'
     | '/api/integrations/stripe-sync'
     | '/api/platform/deployment-mode'
+    | '/api/supadata/$'
     | '/integrations/github/authorize'
     | '/integrations/vercel/install'
     | '/org/_/$'
@@ -4043,6 +4055,7 @@ export interface RootRouteChildren {
   ApiEdgeFunctionsTestRoute: typeof ApiEdgeFunctionsTestRoute
   ApiIntegrationsStripeSyncRoute: typeof ApiIntegrationsStripeSyncRoute
   ApiPlatformDeploymentModeRoute: typeof ApiPlatformDeploymentModeRoute
+  ApiSupadataSplatRoute: typeof ApiSupadataSplatRoute
   IntegrationsGithubAuthorizeRoute: typeof IntegrationsGithubAuthorizeRoute
   ApiConnectIndexRoute: typeof ApiConnectIndexRoute
   ApiMcpIndexRoute: typeof ApiMcpIndexRoute
@@ -4586,6 +4599,13 @@ declare module '@tanstack/react-router' {
       path: '/integrations/github/authorize'
       fullPath: '/integrations/github/authorize'
       preLoaderRoute: typeof IntegrationsGithubAuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/supadata/$': {
+      id: '/api/supadata/$'
+      path: '/api/supadata/$'
+      fullPath: '/api/supadata/$'
+      preLoaderRoute: typeof ApiSupadataSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/platform/deployment-mode': {
@@ -7124,6 +7144,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiEdgeFunctionsTestRoute: ApiEdgeFunctionsTestRoute,
   ApiIntegrationsStripeSyncRoute: ApiIntegrationsStripeSyncRoute,
   ApiPlatformDeploymentModeRoute: ApiPlatformDeploymentModeRoute,
+  ApiSupadataSplatRoute: ApiSupadataSplatRoute,
   IntegrationsGithubAuthorizeRoute: IntegrationsGithubAuthorizeRoute,
   ApiConnectIndexRoute: ApiConnectIndexRoute,
   ApiMcpIndexRoute: ApiMcpIndexRoute,
