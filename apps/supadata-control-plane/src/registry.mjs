@@ -1,6 +1,16 @@
 import { execFile } from 'node:child_process'
 import { randomBytes, randomUUID } from 'node:crypto'
-import { cp, lstat, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import {
+  cp,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rename,
+  rm,
+  writeFile,
+} from 'node:fs/promises'
 import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
@@ -325,8 +335,9 @@ export async function createRegistry({
         const sharedDbVolumeDir = path.join(sharedDatabaseDir, 'volumes', 'db')
         const projectDbVolumeDir = path.join(projectDir, 'volumes', 'db')
         await mkdir(sharedDbVolumeDir, { recursive: true })
-        for (const fileName of ['roles.sql', 'realtime.sql', 'webhooks.sql']) {
-          const target = path.join(sharedDbVolumeDir, fileName)
+        for (const entry of await readdir(projectDbVolumeDir, { withFileTypes: true })) {
+          if (!entry.isFile() && !entry.isSymbolicLink()) continue
+          const target = path.join(sharedDbVolumeDir, entry.name)
           try {
             if ((await lstat(target)).isDirectory())
               await rm(target, { recursive: true, force: true })
