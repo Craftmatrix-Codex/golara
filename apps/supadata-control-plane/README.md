@@ -26,6 +26,10 @@ For storage, the default is `SUPADATA_STORAGE_MODE=shared`: one SeaweedFS contai
 
 `gatewayPort` and `publicUrl` are returned as non-secret project metadata. Secrets are never returned by the API.
 
+All endpoints except `/health` and CORS preflight require `Authorization: Bearer <token>`.
+Set the server-only `SUPADATA_CONTROL_PLANE_TOKEN` to a long random value; do not log,
+commit, or expose it to browser variables.
+
 ## Local verification
 
 ```sh
@@ -68,6 +72,11 @@ docker run --detach --name supadata-control-plane \
 
 The registry generates secrets into the persistent data volume and never
 returns them from its API. Do not commit or log the volume contents. Set
-`SUPADATA_ALLOWED_ORIGIN`, `SUPADATA_DATABASE_MODE`, and
+`SUPADATA_CONTROL_PLANE_TOKEN` (required), `SUPADATA_ALLOWED_ORIGIN`, `SUPADATA_DATABASE_MODE`, and
 `SUPADATA_STORAGE_MODE` with `--env`/an external deployment secret mechanism
 as appropriate for the host. No secrets are baked into the image.
+
+For Studio, set the server-only `SUPADATA_CONTROL_PLANE_URL` and
+`SUPADATA_CONTROL_PLANE_TOKEN`. Studio forwards `/api/supadata/*` through a
+same-origin server route, so no `NEXT_PUBLIC_*` Supadata token is used. The
+token value is intentionally omitted from this documentation.

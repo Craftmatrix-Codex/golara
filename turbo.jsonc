@@ -2,6 +2,7 @@
   "$schema": "./node_modules/turbo/schema.json",
   "ui": "stream",
   "cacheMaxAge": "14d",
+  "globalEnv": ["SUPADATA_CONTROL_PLANE_URL", "SUPADATA_CONTROL_PLANE_TOKEN"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

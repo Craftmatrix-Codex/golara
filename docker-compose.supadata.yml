@@ -8,6 +8,7 @@ services:
       NODE_ENV: production
       PORT: "8090"
       SUPADATA_DATA_DIR: /var/lib/supadata
+      SUPADATA_CONTROL_PLANE_TOKEN: ${SUPADATA_CONTROL_PLANE_TOKEN:?set SUPADATA_CONTROL_PLANE_TOKEN}
       SUPADATA_DATABASE_MODE: ${SUPADATA_DATABASE_MODE:-shared}
       SUPADATA_STORAGE_MODE: ${SUPADATA_STORAGE_MODE:-shared}
       SUPADATA_ALLOWED_ORIGIN: ${SUPADATA_ALLOWED_ORIGIN:-https://supabase.craftmatrix.org}
@@ -36,7 +37,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3000"
-      NEXT_PUBLIC_SUPADATA_CONTROL_PLANE_URL: https://api.supabase.craftmatrix.org
+      SUPADATA_CONTROL_PLANE_URL: http://control-plane:8090
+      SUPADATA_CONTROL_PLANE_TOKEN: ${SUPADATA_CONTROL_PLANE_TOKEN:?set SUPADATA_CONTROL_PLANE_TOKEN}
       NEXT_PUBLIC_IS_PLATFORM: "false"
     expose:
       - "3000"
