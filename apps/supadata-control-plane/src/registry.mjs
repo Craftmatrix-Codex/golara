@@ -390,7 +390,7 @@ export async function createRegistry({
           await writeFile(
             path.join(sharedStorageDir, 'compose.yml'),
             `services:\n  seaweedfs:\n    image: chrislusf/seaweedfs:3.80\n    container_name: supadata-seaweedfs\n    command: server -dir=/data -s3 -s3.config=/etc/seaweedfs/s3.json\n    restart: unless-stopped\n    volumes:\n      - ./data:/data\n      - ./s3.json:/etc/seaweedfs/s3.json:ro\n    expose: [8333]
-    networks: [supadata-storage]\n    healthcheck:\n      test: [\"CMD\", \"wget\", \"--spider\", \"-q\", \"http://127.0.0.1:9333/cluster/status\"]\n      interval: 5s\n      timeout: 5s\n      retries: 20\nnetworks:\n  supadata-storage:\n    name: supadata-storage\n`,
+    networks: [supadata-storage]\n    healthcheck:\n      test: [\"CMD\", \"weed\", \"version\"]\n      interval: 5s\n      timeout: 5s\n      retries: 20\nnetworks:\n  supadata-storage:\n    name: supadata-storage\n`,
             'utf8'
           )
         }
