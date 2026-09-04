@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto'
 import {
   sentryGlobalFunctionMiddleware,
   sentryGlobalRequestMiddleware,
@@ -16,6 +17,39 @@ import { isHostedSupportedApiPath } from '@/lib/hosted-api-allowlist'
 // runs this server-side for every API request — even though pages are served
 // as a static SPA shell. The guard therefore covers all API routes from a
 // single place.
+
+const studioAuthMiddleware = createMiddleware({ type: 'request' }).server(({ request, next }) => {
+  const { pathname } = new URL(request.url)
+  if (pathname === '/api/get-utc-time' || pathname === '/health') return next()
+
+  const username = process.env.SUPADATA_STUDIO_AUTH_USERNAME
+  const password = process.env.SUPADATA_STUDIO_AUTH_PASSWORD
+  if (!username || !password) {
+    return new Response('Studio authentication is not configured', { status: 503 })
+  }
+
+  const encoded = request.headers.get('authorization')?.match(/^Basic (.+)$/i)?.[1]
+  let valid = false
+  if (encoded) {
+    try {
+      const decoded = Buffer.from(encoded, 'base64').toString('utf8')
+      const expected = `${username}:${password}`
+      const actualBytes = Buffer.from(decoded)
+      const expectedBytes = Buffer.from(expected)
+      valid =
+        actualBytes.length === expectedBytes.length && timingSafeEqual(actualBytes, expectedBytes)
+    } catch {
+      valid = false
+    }
+  }
+  if (!valid) {
+    return new Response('Authentication required', {
+      status: 401,
+      headers: { 'www-authenticate': 'Basic realm="Supadata Studio", charset="UTF-8"' },
+    })
+  }
+  return next()
+})
 
 const platformApiGuard = createMiddleware({ type: 'request' }).server(({ request, next }) => {
   const { pathname } = new URL(request.url)
@@ -41,6 +75,6 @@ const platformApiGuard = createMiddleware({ type: 'request' }).server(({ request
 // (`autoInstrumentMiddleware: false` in vite.config.ts) and wire them
 // explicitly so the instrumentation is visible in source.
 export const startInstance = createStart(() => ({
-  requestMiddleware: [sentryGlobalRequestMiddleware, platformApiGuard],
+  requestMiddleware: [sentryGlobalRequestMiddleware, studioAuthMiddleware, platformApiGuard],
   functionMiddleware: [sentryGlobalFunctionMiddleware],
 }))
