@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { randomBytes, randomUUID } from 'node:crypto'
-import { cp, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { cp, lstat, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -12,6 +13,23 @@ const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)
 const SETUP_SCRIPT = path.join(REPOSITORY_ROOT, 'docker', 'setup.sh')
 const LEGACY_NESTED_GATEWAY_PORT = '${API_GW_HTTP_PORT:-${KONG_HTTP_PORT:-8000}}'
 const VALID_GATEWAY_PORT = '${API_GW_HTTP_PORT:-8000}'
+
+async function portAvailable(port) {
+  return await new Promise((resolve) => {
+    const server = net.createServer()
+    server.once('error', () => resolve(false))
+    server.listen(port, '0.0.0.0', () => server.close(() => resolve(true)))
+  })
+}
+
+async function findPort(start, count) {
+  for (let port = start; ; port += 10) {
+    const available = await Promise.all(
+      Array.from({ length: count }, (_, i) => portAvailable(port + i))
+    )
+    if (available.every(Boolean)) return port
+  }
+}
 
 export function slugify(value) {
   return String(value)
@@ -277,6 +295,18 @@ export async function createRegistry({
       )
       const generatedDir = path.join(setupWorkspace, setupRoot)
       await cp(generatedDir, projectDir, { recursive: true })
+      const generatedEntrypoint = path.join(projectDir, 'volumes/api/envoy/docker-entrypoint.sh')
+      try {
+        if ((await lstat(generatedEntrypoint)).isDirectory()) {
+          await rm(generatedEntrypoint, { recursive: true, force: true })
+          await cp(
+            path.join(path.dirname(SETUP_SCRIPT), 'volumes/api/envoy/docker-entrypoint.sh'),
+            generatedEntrypoint
+          )
+        }
+      } catch (error) {
+        if (error.code !== 'ENOENT') throw error
+      }
       const generatedComposeFile = path.join(projectDir, 'docker-compose.yml')
       const composeFile = path.join(projectDir, 'compose.yml')
       const envFile = path.join(projectDir, '.env')
@@ -517,7 +547,7 @@ export async function createRegistry({
       createdAt: new Date().toISOString(),
     }
     await mkdir(projectDir, { recursive: true })
-    const port = 8100 + registry.projects.length * 10
+    const port = await findPort(8100, 4)
     const stack = await createFullStack(project, projectDir, port)
     Object.assign(project, stack)
     registry.projects.push(project)
