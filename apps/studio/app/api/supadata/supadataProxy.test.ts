@@ -25,4 +25,16 @@ describe('proxySupadataRequest', () => {
     expect(forwardedHeaders.get('authorization')).toBe('Bearer server-secret')
     expect(forwardedHeaders.get('authorization')).not.toBe('Bearer browser-token')
   })
+
+  it('preserves bodyless upstream responses such as 204', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
+    const response = await proxySupadataRequest(new Request('http://studio.test/delete'), {
+      baseUrl: 'http://control-plane.test',
+      token: 'server-secret',
+      fetchImpl,
+      path: '/api/projects/demo',
+    })
+    expect(response.status).toBe(204)
+    expect(await response.text()).toBe('')
+  })
 })

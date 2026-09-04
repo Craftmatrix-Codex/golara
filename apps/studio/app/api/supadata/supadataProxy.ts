@@ -27,7 +27,9 @@ export async function proxySupadataRequest(
         ? undefined
         : await request.arrayBuffer(),
   })
-  return new Response(await response.arrayBuffer(), {
+  const body =
+    response.status === 204 || response.status === 304 ? null : await response.arrayBuffer()
+  return new Response(body, {
     status: response.status,
     headers: { 'content-type': response.headers.get('content-type') ?? 'application/json' },
   })
