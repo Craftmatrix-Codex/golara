@@ -460,8 +460,24 @@ export async function createRegistry({
     const registry = await readRegistry()
     const project = registry.projects.find((candidate) => candidate.id === id)
     if (!project) throw new Error(`project '${id}' not found`)
-    const env = Object.fromEntries((await readFile(project.composeEnvFile, 'utf8')).split('\n').flatMap((line) => { const m = line.match(/^([A-Z0-9_]+)=(.*)$/); return m ? [[m[1], m[2]]] : [] }))
-    return { id, apiKey: null, deployablePassword: null, postgres: { host: env.POSTGRES_HOST || '127.0.0.1', port: Number(env.POOLER_PUBLIC_PORT || env.POSTGRES_PORT || project.postgresPort), database: env.POSTGRES_DB || id, username: databaseMode === 'shared' ? `supadata_${id.replaceAll('-', '_')}` : 'postgres', password: env.SUPADATA_POSTGRES_PASSWORD || env.POSTGRES_PASSWORD || null } }
+    const env = Object.fromEntries(
+      (await readFile(project.composeEnvFile, 'utf8')).split('\n').flatMap((line) => {
+        const m = line.match(/^([A-Z0-9_]+)=(.*)$/)
+        return m ? [[m[1], m[2]]] : []
+      })
+    )
+    return {
+      id,
+      apiKey: null,
+      deployablePassword: null,
+      postgres: {
+        host: publicHost,
+        port: Number(env.POOLER_PUBLIC_PORT || env.POSTGRES_PORT || project.postgresPort),
+        database: env.POSTGRES_DB || id,
+        username: databaseMode === 'shared' ? `supadata_${id.replaceAll('-', '_')}` : 'postgres',
+        password: env.SUPADATA_POSTGRES_PASSWORD || env.POSTGRES_PASSWORD || null,
+      },
+    }
   }
 
   async function rotateProjectCredential(id, type) {
@@ -469,10 +485,19 @@ export async function createRegistry({
     const project = registry.projects.find((candidate) => candidate.id === id)
     if (!project) throw new Error(`project '${id}' not found`)
     const normalized = type === 'apiKey' ? 'api-key' : type
-    const key = { 'api-key': 'SUPADATA_API_KEY', 'deployable-password': 'SUPADATA_DEPLOYABLE_PASSWORD', postgres: 'SUPADATA_POSTGRES_PASSWORD', 'postgres-password': 'SUPADATA_POSTGRES_PASSWORD' }[normalized]
+    const key = {
+      'api-key': 'SUPADATA_API_KEY',
+      'deployable-password': 'SUPADATA_DEPLOYABLE_PASSWORD',
+      postgres: 'SUPADATA_POSTGRES_PASSWORD',
+      'postgres-password': 'SUPADATA_POSTGRES_PASSWORD',
+    }[normalized]
     if (!key) throw new Error('credential type must be api-key, deployable-password, or postgres')
     const value = randomBytes(32).toString('base64url')
-    await writeFile(project.composeEnvFile, upsertEnv(await readFile(project.composeEnvFile, 'utf8'), { [key]: value }), { mode: 0o600 })
+    await writeFile(
+      project.composeEnvFile,
+      upsertEnv(await readFile(project.composeEnvFile, 'utf8'), { [key]: value }),
+      { mode: 0o600 }
+    )
     return { type: normalized === 'postgres-password' ? 'postgres' : normalized, value }
   }
 
