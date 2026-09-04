@@ -15,6 +15,16 @@ function jsonResponse(status, payload, origin = '*') {
   })
 }
 
+function credentialMetadata(credentials) {
+  return Object.fromEntries(
+    Object.entries(credentials).flatMap(([name, value]) => {
+      if (!value || typeof value !== 'object') return [[name, value]]
+      const { password: _password, value: _value, ...metadata } = value
+      return [[name, metadata]]
+    })
+  )
+}
+
 async function parseBody(request) {
   const text = await request.text()
   if (!text) return {}
@@ -50,8 +60,9 @@ export function createControlPlaneHandler(
   registry,
   {
     token = process.env.SUPADATA_CONTROL_PLANE_TOKEN,
-    proxyHost =
-      process.env.SUPADATA_PROXY_TARGET_HOST || process.env.SUPADATA_PUBLIC_HOST || '127.0.0.1',
+    proxyHost = process.env.SUPADATA_PROXY_TARGET_HOST ||
+      process.env.SUPADATA_PUBLIC_HOST ||
+      '127.0.0.1',
   } = {}
 ) {
   return async function handle(request) {
@@ -82,6 +93,27 @@ export function createControlPlaneHandler(
           { project: await registry.createProject(await parseBody(request)) },
           origin
         )
+      if (
+        request.method === 'GET' &&
+        parts.length === 4 &&
+        parts[0] === 'api' &&
+        parts[1] === 'projects' &&
+        parts[3] === 'credentials'
+      )
+        return jsonResponse(
+          200,
+          credentialMetadata(await registry.getProjectCredentials(parts[2])),
+          origin
+        )
+      if (
+        request.method === 'POST' &&
+        parts.length === 6 &&
+        parts[0] === 'api' &&
+        parts[1] === 'projects' &&
+        parts[3] === 'credentials' &&
+        parts[5] === 'rotate'
+      )
+        return jsonResponse(200, await registry.rotateProjectCredential(parts[2], parts[4]), origin)
       if (
         request.method === 'POST' &&
         parts.length === 4 &&

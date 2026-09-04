@@ -29,6 +29,23 @@ test('missing control-plane token rejects protected requests even with a bearer 
   )
 })
 
+test('credential endpoints require auth and return rotation secrets only from POST', async () => {
+  const registry = {
+    getProjectCredentials: async () => ({ postgres: { host: '127.0.0.1', password: 'private' } }),
+    rotateProjectCredential: async (_id, type) => ({ type, value: 'new-secret' }),
+  }
+  const handler = createControlPlaneHandler(registry, { token: 'secret' })
+  assert.equal((await handler(request('/api/projects/demo/credentials'))).status, 401)
+  const headers = { authorization: 'Bearer secret' }
+  const metadata = await handler(request('/api/projects/demo/credentials', { headers }))
+  assert.equal(metadata.status, 200)
+  assert.deepEqual(await metadata.json(), { postgres: { host: '127.0.0.1' } })
+  const rotated = await handler(
+    request('/api/projects/demo/credentials/api-key/rotate', { method: 'POST', headers })
+  )
+  assert.deepEqual(await rotated.json(), { type: 'api-key', value: 'new-secret' })
+})
+
 test('proxy requests use the configured host while preserving project ports', async () => {
   const originalFetch = globalThis.fetch
   const requests = []
