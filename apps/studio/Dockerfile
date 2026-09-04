@@ -125,5 +125,5 @@ COPY --from=build /srv ./
 ENV PORT=3000
 EXPOSE 3000
 ENTRYPOINT ["docker-entrypoint.sh"]
-HEALTHCHECK --interval=5s --timeout=5s --retries=3 CMD node -e "fetch('http://localhost:3000/api/platform/profile').then((r) => {if (r.status !== 200) throw new Error(r.status)})"
+HEALTHCHECK --interval=5s --timeout=5s --retries=3 CMD node -e "fetch('http://localhost:3000/api/get-utc-time').then((r) => {if (r.status !== 200) throw new Error(r.status)})"
 CMD ["node", "apps/studio/server.js"]
