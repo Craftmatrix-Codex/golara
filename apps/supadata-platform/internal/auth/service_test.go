@@ -8,11 +8,12 @@ import (
 )
 
 type fakeRepository struct {
-	user          User
-	passwordHash  string
-	created       bool
-	sessionCreate bool
-	session       Session
+	user           User
+	passwordHash   string
+	created        bool
+	sessionCreate  bool
+	session        Session
+	revokedSession string
 }
 
 func (r *fakeRepository) CreateUser(_ context.Context, email, passwordHash string, metadata map[string]any, confirmed bool) (User, error) {
@@ -53,6 +54,11 @@ func (r *fakeRepository) RefreshSession(_ context.Context, oldHash, newHash stri
 	r.session.RefreshTokenHash = newHash
 	r.session.ExpiresAt = expiresAt
 	return r.user, r.session, nil
+}
+
+func (r *fakeRepository) RevokeSession(_ context.Context, sessionID string) error {
+	r.revokedSession = sessionID
+	return nil
 }
 
 func TestPasswordHashDoesNotStorePlaintextAndVerifies(t *testing.T) {
@@ -138,5 +144,20 @@ func TestSignInDoesNotRevealWhetherEmailExists(t *testing.T) {
 	_, err := service.SignIn(context.Background(), "missing@example.com", "password")
 	if !errors.Is(err, ErrInvalidCredentials) {
 		t.Fatalf("SignIn() error = %v, want invalid credentials", err)
+	}
+}
+
+func TestLogoutRevokesSessionFromVerifiedAccessToken(t *testing.T) {
+	repository := &fakeRepository{}
+	service := NewService(repository, ServiceOptions{JWTSecret: []byte("auth-test-secret"), TokenTTL: time.Hour, AutoConfirm: true})
+	issued, err := service.SignUp(context.Background(), "user@example.com", "password-123456", nil)
+	if err != nil {
+		t.Fatalf("SignUp() error = %v", err)
+	}
+	if err := service.Logout(context.Background(), issued.AccessToken); err != nil {
+		t.Fatalf("Logout() error = %v", err)
+	}
+	if repository.revokedSession != "session-1" {
+		t.Fatalf("revoked session = %q, want session-1", repository.revokedSession)
 	}
 }

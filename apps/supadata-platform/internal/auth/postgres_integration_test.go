@@ -64,4 +64,11 @@ func TestPostgresRepositoryPasswordSessionRoundTrip(t *testing.T) {
 	if err := database.QueryRowContext(ctx, `SELECT revoked FROM auth.refresh_tokens WHERE token = 'old-refresh-hash'`).Scan(&revoked); err != nil || !revoked {
 		t.Fatalf("old refresh token revoked=%v err=%v", revoked, err)
 	}
+	if err := repository.RevokeSession(ctx, session.ID); err != nil {
+		t.Fatalf("revoke session: %v", err)
+	}
+	var activeRefreshTokens int
+	if err := database.QueryRowContext(ctx, `SELECT count(*) FROM auth.refresh_tokens WHERE session_id = $1 AND revoked = false`, session.ID).Scan(&activeRefreshTokens); err != nil || activeRefreshTokens != 0 {
+		t.Fatalf("active refresh tokens=%d err=%v", activeRefreshTokens, err)
+	}
 }

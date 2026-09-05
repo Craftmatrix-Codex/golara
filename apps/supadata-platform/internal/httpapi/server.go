@@ -41,6 +41,10 @@ type AccessTokenUserService interface {
 	GetUserByAccessToken(context.Context, string) (auth.User, error)
 }
 
+type LogoutService interface {
+	Logout(context.Context, string) error
+}
+
 type APIKeyConfig struct {
 	Anon        string
 	ServiceRole string
@@ -147,6 +151,28 @@ func (s *Server) serveHTTP(response http.ResponseWriter, request *http.Request) 
 			return
 		}
 		writeJSON(response, http.StatusOK, user)
+		return
+	}
+	if request.Method == http.MethodPost && request.URL.Path == "/auth/v1/logout" {
+		if !s.hasAPIKey(request.Header.Get("apikey")) || !strings.HasPrefix(request.Header.Get("Authorization"), "Bearer ") {
+			writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+			return
+		}
+		logoutService, ok := s.auth.(LogoutService)
+		if !ok {
+			writeJSON(response, http.StatusServiceUnavailable, map[string]string{"error": "auth storage unavailable"})
+			return
+		}
+		accessToken := strings.TrimSpace(strings.TrimPrefix(request.Header.Get("Authorization"), "Bearer "))
+		if accessToken == "" {
+			writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+			return
+		}
+		if err := logoutService.Logout(request.Context(), accessToken); err != nil {
+			writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "invalid token"})
+			return
+		}
+		writeJSON(response, http.StatusNoContent, nil)
 		return
 	}
 	if request.Method == http.MethodGet && request.URL.Path == "/auth/v1/settings" {

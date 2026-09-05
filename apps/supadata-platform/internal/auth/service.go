@@ -47,6 +47,10 @@ type Repository interface {
 	RefreshSession(context.Context, string, string, time.Time) (User, Session, error)
 }
 
+type SessionRevoker interface {
+	RevokeSession(context.Context, string) error
+}
+
 type ServiceOptions struct {
 	JWTSecret   []byte
 	Issuer      string
@@ -176,6 +180,24 @@ func (s *Service) Refresh(ctx context.Context, refreshToken string) (SessionResp
 		RefreshToken: rotatedRefreshToken,
 		User:         user,
 	}, nil
+}
+
+func (s *Service) Logout(ctx context.Context, accessToken string) error {
+	if len(s.jwtSecret) == 0 || strings.TrimSpace(accessToken) == "" {
+		return ErrInvalidCredentials
+	}
+	claims, err := jwt.VerifyHS256(accessToken, s.jwtSecret, jwt.ValidationOptions{Now: s.now(), Issuer: s.issuer, Audience: s.audience})
+	if err != nil || claims.Subject == "" || claims.SessionID == "" {
+		return ErrInvalidCredentials
+	}
+	revoker, ok := s.repository.(SessionRevoker)
+	if !ok {
+		return errors.New("session revocation is not configured")
+	}
+	if err := revoker.RevokeSession(ctx, claims.SessionID); err != nil {
+		return fmt.Errorf("revoke auth session: %w", err)
+	}
+	return nil
 }
 
 func (s *Service) GetUserByAccessToken(ctx context.Context, accessToken string) (User, error) {
