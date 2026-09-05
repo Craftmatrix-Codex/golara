@@ -12,7 +12,7 @@ Status values are `NOT STARTED`, `PARTIAL`, or `PASS`. No feature is marked `PAS
 | REST SELECT/INSERT/UPDATE/DELETE | PARTIAL | Parameterized SELECT/INSERT/UPDATE/DELETE builders, API-key/JWT gate, request-claim transaction propagation, RLS integration test, identifier-injection tests, and live PostgreSQL GET integration test; upsert, embeds...[truncated]
 | RPC | PARTIAL | POST `/rest/v1/rpc/{function}` with validated named PostgreSQL arguments, API-key/JWT/RLS transaction path, and sqlmock handler coverage; overloaded functions, scalar/object return parity, and exact PostgREST errors remain unimplemented |
 | Realtime WebSocket protocol | NOT STARTED | — |
-| Storage upload/download/signed URLs | NOT STARTED | — |
+| Storage upload/download/list/delete | PARTIAL | API-key authorization, service/user mutation checks, path traversal rejection, size limits, S3-compatible SeaweedFS round-trip, and handler tests; bucket metadata, signed URLs, policies, resumable uploads, and exact Storage error parity remain unimplemented |
 | Database metadata/admin API | NOT STARTED | — |
 | Edge functions | NOT STARTED | — |
 | Supabase client compatibility | NOT STARTED | — |

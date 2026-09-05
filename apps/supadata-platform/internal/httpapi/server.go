@@ -53,6 +53,7 @@ type ServerOptions struct {
 	APIKeys       APIKeyConfig
 	AuthSettings  AuthSettings
 	REST          http.Handler
+	Storage       http.Handler
 }
 
 type Server struct {
@@ -63,6 +64,7 @@ type Server struct {
 	apiKeys       APIKeyConfig
 	authSettings  AuthSettings
 	rest          http.Handler
+	storage       http.Handler
 }
 
 func NewServer(options ServerOptions) *Server {
@@ -70,7 +72,7 @@ func NewServer(options ServerOptions) *Server {
 	if origin == "" {
 		origin = "*"
 	}
-	return &Server{token: options.Token, allowedOrigin: origin, registry: options.Registry, auth: options.Auth, apiKeys: options.APIKeys, authSettings: options.AuthSettings, rest: options.REST}
+	return &Server{token: options.Token, allowedOrigin: origin, registry: options.Registry, auth: options.Auth, apiKeys: options.APIKeys, authSettings: options.AuthSettings, rest: options.REST, storage: options.Storage}
 }
 
 func (s *Server) Handler() http.Handler {
@@ -92,6 +94,14 @@ func (s *Server) serveHTTP(response http.ResponseWriter, request *http.Request) 
 			return
 		}
 		s.rest.ServeHTTP(response, request)
+		return
+	}
+	if strings.HasPrefix(request.URL.Path, "/storage/v1/") {
+		if s.storage == nil {
+			writeJSON(response, http.StatusServiceUnavailable, map[string]string{"error": "storage service unavailable"})
+			return
+		}
+		s.storage.ServeHTTP(response, request)
 		return
 	}
 	if request.Method == http.MethodGet && request.URL.Path == "/health" {

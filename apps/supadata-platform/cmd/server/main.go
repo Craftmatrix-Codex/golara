@@ -18,6 +18,7 @@ import (
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/httpapi"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/registry"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/rest"
+	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/storage"
 )
 
 func main() {
@@ -31,6 +32,7 @@ func main() {
 	var database *sql.DB
 	var authService httpapi.AuthService
 	var restHandler http.Handler
+	var storageHandler http.Handler
 	if cfg.DatabaseURL != "" {
 		database, err = sql.Open("pgx", cfg.DatabaseURL)
 		if err != nil {
@@ -61,6 +63,26 @@ func main() {
 	} else {
 		slog.Warn("PostgreSQL is not configured; Auth routes are unavailable")
 	}
+	if cfg.StorageEndpoint != "" || cfg.StorageAccessKey != "" || cfg.StorageSecretKey != "" {
+		objectStore, storageErr := storage.NewS3Store(storage.S3Config{
+			Endpoint:  cfg.StorageEndpoint,
+			AccessKey: cfg.StorageAccessKey,
+			SecretKey: cfg.StorageSecretKey,
+			Region:    cfg.StorageRegion,
+			UseSSL:    cfg.StorageUseSSL,
+		})
+		if storageErr != nil {
+			slog.Error("initialize object storage", "error", storageErr)
+			os.Exit(1)
+		}
+		storageHandler = storage.NewHandler(storage.HandlerOptions{
+			Store:     objectStore,
+			APIKeys:   storage.APIKeyConfig{Anon: cfg.AnonKey, ServiceRole: cfg.ServiceRoleKey},
+			JWTSecret: []byte(cfg.JWTSecret),
+			Issuer:    cfg.AuthIssuer,
+			Audience:  "authenticated",
+		})
+	}
 
 	server := &http.Server{
 		Addr: "0.0.0.0:" + formatPort(cfg.Port),
@@ -72,6 +94,7 @@ func main() {
 			APIKeys:       httpapi.APIKeyConfig{Anon: cfg.AnonKey, ServiceRole: cfg.ServiceRoleKey},
 			AuthSettings:  httpapi.AuthSettings{EmailEnabled: cfg.AuthEmailEnabled, PhoneEnabled: cfg.AuthPhoneEnabled, MailerAutoconfirm: cfg.AuthAutoConfirm, SMSProvider: cfg.SMSProvider, DisableSignup: cfg.AuthDisableSignup},
 			REST:          restHandler,
+			Storage:       storageHandler,
 		}).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       60 * time.Second,

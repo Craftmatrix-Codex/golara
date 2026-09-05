@@ -33,3 +33,16 @@ func TestLoadReadsExplicitValues(t *testing.T) {
 		t.Fatal("Load() did not read the control-plane token")
 	}
 }
+
+func TestLoadReadsS3StorageConfiguration(t *testing.T) {
+	t.Setenv("SUPADATA_STORAGE_ENDPOINT", "seaweedfs:8333")
+	t.Setenv("SUPADATA_STORAGE_ACCESS_KEY", "access")
+	t.Setenv("SUPADATA_STORAGE_SECRET_KEY", "secret")
+	t.Setenv("SUPADATA_STORAGE_REGION", "us-east-1")
+	t.Setenv("SUPADATA_STORAGE_USE_SSL", "true")
+
+	cfg := Load()
+	if cfg.StorageEndpoint != "seaweedfs:8333" || cfg.StorageAccessKey != "access" || cfg.StorageSecretKey != "secret" || cfg.StorageRegion != "us-east-1" || !cfg.StorageUseSSL {
+		t.Fatalf("Load() did not read storage configuration: %+v", cfg)
+	}
+}

@@ -10,4 +10,4 @@ Compatibility means preserving externally observable API behavior, protocols, st
 
 ## Phase 1 boundary
 
-Phase 1 establishes the core HTTP/configuration/auth contract and keeps the existing Studio-facing `/api/projects` response shape. Authentication, REST/RPC, realtime, storage, functions, metadata, and the current Docker provisioning implementation remain explicitly incomplete until their own tests pass.
+The current implementation establishes the core HTTP/configuration/auth contract, basic REST/RPC behavior, and a partial Storage object API while keeping the existing Studio-facing `/api/projects` response shape. Realtime, full Storage parity, functions, metadata, and the current Docker provisioning implementation remain explicitly incomplete.

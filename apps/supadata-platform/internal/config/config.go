@@ -13,6 +13,11 @@ type Config struct {
 	AllowedOrigin     string
 	DatabaseMode      string
 	StorageMode       string
+	StorageEndpoint   string
+	StorageAccessKey  string
+	StorageSecretKey  string
+	StorageRegion     string
+	StorageUseSSL     bool
 	DatabaseURL       string
 	JWTSecret         string
 	AuthIssuer        string
@@ -34,6 +39,11 @@ func Load() Config {
 		AllowedOrigin:     envString("SUPADATA_ALLOWED_ORIGIN", "*"),
 		DatabaseMode:      envString("SUPADATA_DATABASE_MODE", "shared"),
 		StorageMode:       envString("SUPADATA_STORAGE_MODE", "shared"),
+		StorageEndpoint:   os.Getenv("SUPADATA_STORAGE_ENDPOINT"),
+		StorageAccessKey:  os.Getenv("SUPADATA_STORAGE_ACCESS_KEY"),
+		StorageSecretKey:  os.Getenv("SUPADATA_STORAGE_SECRET_KEY"),
+		StorageRegion:     envString("SUPADATA_STORAGE_REGION", "us-east-1"),
+		StorageUseSSL:     envBool("SUPADATA_STORAGE_USE_SSL", false),
 		DatabaseURL:       os.Getenv("DATABASE_URL"),
 		JWTSecret:         os.Getenv("JWT_SECRET"),
 		AuthIssuer:        envString("GOTRUE_JWT_ISSUER", "https://supabase.craftmatrix.org/auth/v1"),
