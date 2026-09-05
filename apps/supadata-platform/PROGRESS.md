@@ -18,12 +18,12 @@ The Go rewrite is being developed beside the existing Node control plane. The ex
 - Stripped Go binary builds.
 - Local binary smoke test verified health, unauthorized access, project creation, selection, and current-project persistence.
 - Auth password hashing and verification use bcrypt; plaintext is never stored.
-- Auth signup, password token, refresh-token rotation, logout/session revocation, API-key gating, disable-signup, GoTrue health/settings response shapes, and persisted-user lookup are covered by executed Go tests.
+- Auth signup, password token, refresh-token rotation, logout/session revocation, admin user list/delete, API-key gating, disable-signup, GoTrue health/settings response shapes, and persisted-user lookup are covered by executed Go tests.
 - PostgreSQL Auth repository round-trip and refresh-token rotation passed against disposable PostgreSQL 16.
 - REST has parameterized SELECT/INSERT/PATCH/DELETE builders and API-key/JWT gating; handler tests passed with sqlmock and live PostgreSQL SELECT integration.
 - Storage has API-key authorization, service/user mutation checks, safe bucket/object paths, bounded uploads, list/download/delete handlers, and an S3-compatible backend. A disposable SeaweedFS 3.80 put/get/list/delete round-trip passed.
 - Realtime has API-key/JWT-gated `/realtime/v1/websocket` handling, Phoenix join/leave/heartbeat replies, public-topic authorization, WebSocket tests, and NGINX upgrade routing. Broadcast, presence, database changes, and exact protocol parity remain.
-- A clean BuildKit single-image build passed: native Studio Vite/TanStack build, Go test/race/vet/build stage, NGINX, and runtime entrypoint. Image size reported by Docker is 433,460,918 bytes.
+- A clean BuildKit single-image build passed: native Studio Vite/TanStack build, Go test/race/vet/build stage, NGINX, and runtime entrypoint. Image size reported by Docker is 433,469,391 bytes.
 - Image smoke passed through NGINX for `/health`, `/auth/v1/health`, and authenticated `/api/projects`; `nginx -t` passed. The disposable container was removed.
 
 ## Active work
