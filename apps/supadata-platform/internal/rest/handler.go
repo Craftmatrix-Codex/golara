@@ -277,7 +277,13 @@ func (h *Handler) handleInsert(response http.ResponseWriter, request *http.Reque
 		}
 		rows = []map[string]any{row}
 	}
-	query, err := BuildInsertQuery(schema, path, rows)
+	var query Query
+	var err error
+	if request.URL.Query().Get("on_conflict") != "" || strings.Contains(request.Header.Get("Prefer"), "resolution=merge-duplicates") {
+		query, err = BuildUpsertQuery(schema, path, rows, request.URL.Query().Get("on_conflict"))
+	} else {
+		query, err = BuildInsertQuery(schema, path, rows)
+	}
 	if err != nil {
 		writeJSON(response, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return

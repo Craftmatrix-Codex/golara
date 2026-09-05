@@ -52,6 +52,34 @@ func TestBuildSelectQuerySupportsPostgRESTNullAndBooleanFilters(t *testing.T) {
 	}
 }
 
+func TestBuildSelectQuerySupportsInAndNotFilters(t *testing.T) {
+	query, err := BuildSelectQuery("public", "todos", url.Values{
+		"id":    {"in.(1,2,3)"},
+		"title": {"not.ilike.%draft%"},
+	})
+	if err != nil {
+		t.Fatalf("BuildSelectQuery() error = %v", err)
+	}
+	wantSQL := `SELECT * FROM "public"."todos" WHERE "id" IN ($1, $2, $3) AND NOT ("title" ILIKE $4)`
+	if query.SQL != wantSQL {
+		t.Fatalf("SQL = %q, want %q", query.SQL, wantSQL)
+	}
+	if len(query.Args) != 4 || query.Args[0] != "1" || query.Args[1] != "2" || query.Args[2] != "3" || query.Args[3] != "%draft%" {
+		t.Fatalf("Args = %#v, want four values", query.Args)
+	}
+}
+
+func TestBuildSelectQuerySupportsOrFilters(t *testing.T) {
+	query, err := BuildSelectQuery("public", "todos", url.Values{"or": {"(id.eq.1,title.ilike.%bug%)"}})
+	if err != nil {
+		t.Fatalf("BuildSelectQuery() error = %v", err)
+	}
+	wantSQL := `SELECT * FROM "public"."todos" WHERE ("id" = $1 OR "title" ILIKE $2)`
+	if query.SQL != wantSQL || len(query.Args) != 2 || query.Args[0] != "1" || query.Args[1] != "%bug%" {
+		t.Fatalf("SQL = %q args=%#v", query.SQL, query.Args)
+	}
+}
+
 func FuzzBuildSelectQueryNeverPanics(f *testing.F) {
 	f.Add("todos")
 	f.Add(`todos; DROP TABLE users`)

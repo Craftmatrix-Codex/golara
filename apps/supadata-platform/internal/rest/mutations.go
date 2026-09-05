@@ -67,11 +67,11 @@ func buildWhere(values url.Values, argumentNumber int) (string, []any, error) {
 	conditions := make([]string, 0, len(keys))
 	args := make([]any, 0)
 	for _, key := range keys {
-		if !validIdentifier(key) {
+		if key != "or" && !validIdentifier(key) {
 			return "", nil, errors.New("invalid filter identifier")
 		}
 		for _, expression := range values[key] {
-			condition, conditionArgs, err := parseFilter(key, expression, argumentNumber+len(args))
+			condition, conditionArgs, err := buildFilter(key, expression, argumentNumber+len(args))
 			if err != nil {
 				return "", nil, err
 			}
