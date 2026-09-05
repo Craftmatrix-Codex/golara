@@ -42,6 +42,25 @@ func TestRealtimeRejectsMissingAPIKey(t *testing.T) {
 	}
 }
 
+func TestRealtimeRejectsInvalidAccessToken(t *testing.T) {
+	server := httptest.NewServer(NewHandler(HandlerOptions{APIKeys: APIKeyConfig{Anon: "anon"}, JWTSecret: []byte("secret")}))
+	defer server.Close()
+	parsed, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed.Scheme = "ws"
+	parsed.Path = "/realtime/v1/websocket"
+	parsed.RawQuery = "apikey=anon&access_token=not-a-jwt&vsn=1.0.0"
+	connection, response, dialErr := websocket.DefaultDialer.Dial(parsed.String(), nil)
+	if connection != nil {
+		connection.Close()
+	}
+	if dialErr == nil || response == nil || response.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("dial error=%v response=%v", dialErr, response)
+	}
+}
+
 func TestRealtimeJoinAndHeartbeatProtocol(t *testing.T) {
 	_, websocketURL := realtimeTestServer(t)
 	connection, _, err := websocket.DefaultDialer.Dial(websocketURL, nil)
