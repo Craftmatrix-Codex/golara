@@ -23,7 +23,7 @@ type ObjectInfo struct {
 	Key          string    `json:"name"`
 	ETag         string    `json:"etag,omitempty"`
 	ContentType  string    `json:"content_type,omitempty"`
-	Size         int64     `json:"metadata,omitempty"`
+	Size         int64     `json:"size,omitempty"`
 	LastModified time.Time `json:"last_modified,omitempty"`
 }
 
