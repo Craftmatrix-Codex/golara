@@ -18,7 +18,7 @@ The Go rewrite is being developed beside the existing Node control plane. The ex
 - Stripped Go binary builds.
 - Local binary smoke test verified health, unauthorized access, project creation, selection, and current-project persistence.
 - Auth password hashing and verification use bcrypt; plaintext is never stored.
-- Auth signup, password token, refresh-token rotation, API-key gating, disable-signup, GoTrue health/settings response shapes, and persisted-user lookup are covered by executed Go tests.
+- Auth signup, password token, refresh-token rotation, logout/session revocation, API-key gating, disable-signup, GoTrue health/settings response shapes, and persisted-user lookup are covered by executed Go tests.
 - PostgreSQL Auth repository round-trip and refresh-token rotation passed against disposable PostgreSQL 16.
 - REST has parameterized SELECT/INSERT/PATCH/DELETE builders and API-key/JWT gating; handler tests passed with sqlmock and live PostgreSQL SELECT integration.
 - Storage has API-key authorization, service/user mutation checks, safe bucket/object paths, bounded uploads, list/download/delete handlers, and an S3-compatible backend. A disposable SeaweedFS 3.80 put/get/list/delete round-trip passed.
