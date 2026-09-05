@@ -71,4 +71,14 @@ func TestPostgresRepositoryPasswordSessionRoundTrip(t *testing.T) {
 	if err := database.QueryRowContext(ctx, `SELECT count(*) FROM auth.refresh_tokens WHERE session_id = $1 AND revoked = false`, session.ID).Scan(&activeRefreshTokens); err != nil || activeRefreshTokens != 0 {
 		t.Fatalf("active refresh tokens=%d err=%v", activeRefreshTokens, err)
 	}
+	users, total, err := repository.ListUsers(ctx, 1, 10)
+	if err != nil || total != 1 || len(users) != 1 || users[0].ID != user.ID {
+		t.Fatalf("list users=%+v total=%d err=%v", users, total, err)
+	}
+	if err := repository.DeleteUser(ctx, user.ID); err != nil {
+		t.Fatalf("delete user: %v", err)
+	}
+	if _, _, err := repository.ListUsers(ctx, 1, 10); err != nil {
+		t.Fatalf("list after delete: %v", err)
+	}
 }

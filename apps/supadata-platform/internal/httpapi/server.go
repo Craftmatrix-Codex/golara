@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/auth"
@@ -43,6 +44,14 @@ type AccessTokenUserService interface {
 
 type LogoutService interface {
 	Logout(context.Context, string) error
+}
+
+type AdminUserService interface {
+	ListUsers(context.Context, int, int) ([]auth.User, int, error)
+}
+
+type AdminUserDeleteService interface {
+	DeleteUser(context.Context, string) error
 }
 
 type APIKeyConfig struct {
@@ -175,6 +184,51 @@ func (s *Server) serveHTTP(response http.ResponseWriter, request *http.Request) 
 		writeJSON(response, http.StatusNoContent, nil)
 		return
 	}
+	if request.Method == http.MethodGet && request.URL.Path == "/auth/v1/admin/users" {
+		if !s.isServiceRoleRequest(request) {
+			writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+			return
+		}
+		adminService, ok := s.auth.(AdminUserService)
+		if !ok {
+			writeJSON(response, http.StatusServiceUnavailable, map[string]string{"error": "auth storage unavailable"})
+			return
+		}
+		page, perPage, valid := pagination(request)
+		if !valid {
+			writeJSON(response, http.StatusBadRequest, map[string]string{"error": "invalid pagination"})
+			return
+		}
+		users, total, err := adminService.ListUsers(request.Context(), page, perPage)
+		if err != nil {
+			writeJSON(response, http.StatusBadGateway, map[string]string{"error": "could not list users"})
+			return
+		}
+		writeJSON(response, http.StatusOK, map[string]any{"users": users, "total": total})
+		return
+	}
+	if request.Method == http.MethodDelete && strings.HasPrefix(request.URL.Path, "/auth/v1/admin/users/") {
+		if !s.isServiceRoleRequest(request) {
+			writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+			return
+		}
+		deleteService, ok := s.auth.(AdminUserDeleteService)
+		if !ok {
+			writeJSON(response, http.StatusServiceUnavailable, map[string]string{"error": "auth storage unavailable"})
+			return
+		}
+		userID := strings.TrimPrefix(request.URL.Path, "/auth/v1/admin/users/")
+		if userID == "" || strings.Contains(userID, "/") {
+			writeJSON(response, http.StatusBadRequest, map[string]string{"error": "invalid user id"})
+			return
+		}
+		if err := deleteService.DeleteUser(request.Context(), userID); err != nil {
+			writeJSON(response, http.StatusNotFound, map[string]string{"error": "user not found"})
+			return
+		}
+		writeJSON(response, http.StatusNoContent, nil)
+		return
+	}
 	if request.Method == http.MethodGet && request.URL.Path == "/auth/v1/settings" {
 		if !s.hasAPIKey(request.Header.Get("apikey")) {
 			writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
@@ -267,6 +321,34 @@ func (s *Server) serveHTTP(response http.ResponseWriter, request *http.Request) 
 	default:
 		writeJSON(response, http.StatusNotFound, map[string]string{"error": "not found"})
 	}
+}
+
+func (s *Server) isServiceRoleRequest(request *http.Request) bool {
+	configured := s.apiKeys.ServiceRole
+	providedKey := request.Header.Get("apikey")
+	authorization := request.Header.Get("Authorization")
+	providedToken := strings.TrimSpace(strings.TrimPrefix(authorization, "Bearer "))
+	return configured != "" && len(configured) == len(providedKey) && len(configured) == len(providedToken) &&
+		subtle.ConstantTimeCompare([]byte(configured), []byte(providedKey)) == 1 &&
+		subtle.ConstantTimeCompare([]byte(configured), []byte(providedToken)) == 1
+}
+
+func pagination(request *http.Request) (int, int, bool) {
+	page, perPage := 1, 50
+	var err error
+	if value := request.URL.Query().Get("page"); value != "" {
+		page, err = strconv.Atoi(value)
+		if err != nil || page < 1 {
+			return 0, 0, false
+		}
+	}
+	if value := request.URL.Query().Get("per_page"); value != "" {
+		perPage, err = strconv.Atoi(value)
+		if err != nil || perPage < 1 || perPage > 1000 {
+			return 0, 0, false
+		}
+	}
+	return page, perPage, true
 }
 
 func (s *Server) hasAPIKey(provided string) bool {

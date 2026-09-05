@@ -51,6 +51,11 @@ type SessionRevoker interface {
 	RevokeSession(context.Context, string) error
 }
 
+type AdminUserRepository interface {
+	ListUsers(context.Context, int, int) ([]User, int, error)
+	DeleteUser(context.Context, string) error
+}
+
 type ServiceOptions struct {
 	JWTSecret   []byte
 	Issuer      string
@@ -180,6 +185,28 @@ func (s *Service) Refresh(ctx context.Context, refreshToken string) (SessionResp
 		RefreshToken: rotatedRefreshToken,
 		User:         user,
 	}, nil
+}
+
+func (s *Service) ListUsers(ctx context.Context, page, perPage int) ([]User, int, error) {
+	if page < 1 || perPage < 1 || perPage > 1000 {
+		return nil, 0, errors.New("invalid pagination")
+	}
+	adminRepository, ok := s.repository.(AdminUserRepository)
+	if !ok {
+		return nil, 0, errors.New("admin user listing is not configured")
+	}
+	return adminRepository.ListUsers(ctx, page, perPage)
+}
+
+func (s *Service) DeleteUser(ctx context.Context, userID string) error {
+	if strings.TrimSpace(userID) == "" {
+		return ErrUserNotFound
+	}
+	adminRepository, ok := s.repository.(AdminUserRepository)
+	if !ok {
+		return errors.New("admin user deletion is not configured")
+	}
+	return adminRepository.DeleteUser(ctx, userID)
 }
 
 func (s *Service) Logout(ctx context.Context, accessToken string) error {
