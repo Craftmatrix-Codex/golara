@@ -51,3 +51,15 @@ func TestBuildSelectQuerySupportsPostgRESTNullAndBooleanFilters(t *testing.T) {
 		t.Fatalf("Args = %#v, want none", query.Args)
 	}
 }
+
+func FuzzBuildSelectQueryNeverPanics(f *testing.F) {
+	f.Add("todos")
+	f.Add(`todos; DROP TABLE users`)
+	f.Add(`todos" FROM users --`)
+	f.Fuzz(func(t *testing.T, table string) {
+		query, err := BuildSelectQuery("public", table, nil)
+		if err == nil && query.SQL == "" {
+			t.Fatal("successful query was empty")
+		}
+	})
+}

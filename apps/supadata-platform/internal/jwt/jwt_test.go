@@ -58,3 +58,12 @@ func TestVerifyHS256RejectsTamperingWrongSecretAlgorithmAndExpiry(t *testing.T) 
 		t.Error("VerifyHS256 accepted a non-HS256 algorithm")
 	}
 }
+
+func FuzzVerifyHS256NeverPanics(f *testing.F) {
+	f.Add("not-a-token")
+	f.Add("eyJhbGciOiJub25lIn0.e30.")
+	f.Add("a.b.c.d")
+	f.Fuzz(func(t *testing.T, token string) {
+		_, _ = VerifyHS256(token, []byte("fuzz-secret"), ValidationOptions{Now: time.Unix(1_800_000_000, 0)})
+	})
+}
