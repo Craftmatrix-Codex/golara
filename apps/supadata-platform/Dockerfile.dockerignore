@@ -1,0 +1,13 @@
+**/.git
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/coverage
+**/*.log
+apps/www
+apps/supadata-control-plane
+apps/studio/.env
+apps/ui-library/.env
+docker/volumes/db/data
+docker/volumes/storage

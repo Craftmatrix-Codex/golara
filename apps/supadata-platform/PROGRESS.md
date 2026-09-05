@@ -21,7 +21,7 @@ The Go rewrite is being developed beside the existing Node control plane. The ex
 - Auth signup, password token, refresh-token rotation, API-key gating, disable-signup, GoTrue health/settings response shapes, and persisted-user lookup are covered by executed Go tests.
 - PostgreSQL Auth repository round-trip and refresh-token rotation passed against disposable PostgreSQL 16.
 - REST has parameterized SELECT/INSERT/PATCH/DELETE builders and API-key/JWT gating; handler tests passed with sqlmock and live PostgreSQL SELECT integration.
-- A clean BuildKit single-image build passed: native Studio Vite/TanStack build, Go test/race/vet/build stage, NGINX, and runtime entrypoint. Image size reported by Docker is 432,468,963 bytes.
+- A clean BuildKit single-image build passed: native Studio Vite/TanStack build, Go test/race/vet/build stage, NGINX, and runtime entrypoint. Image size reported by Docker is 432,474,067 bytes.
 - Image smoke passed through NGINX for `/health`, `/auth/v1/health`, and authenticated `/api/projects`; `nginx -t` passed. The disposable container was removed.
 
 ## Active work
