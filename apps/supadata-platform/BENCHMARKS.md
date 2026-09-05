@@ -2,8 +2,8 @@
 
 Measured on 2026-09-05, Linux amd64, AMD EPYC Processor with IBPB, Go 1.22.2:
 
-- `BenchmarkSignHS256-4`: 316,806 ops, 5,432 ns/op, 1,936 B/op, 19 allocs/op.
-- `BenchmarkBuildSelectQuery-4`: 392,371 ops, 2,999 ns/op, 784 B/op, 27 allocs/op.
+- `BenchmarkSignHS256-4`: 311,568 ops, 4,039 ns/op, 1,936 B/op, 19 allocs/op.
+- `BenchmarkBuildSelectQuery-4`: 451,500 ops, 2,972 ns/op, 784 B/op, 27 allocs/op.
 - Single-image Docker size: 432,470,579 bytes (about 412 MiB decimal image metadata; `docker inspect` size).
 - The Docker build ran Studio's Vite/TanStack build and its smoke server; this is not a full platform performance benchmark.
 

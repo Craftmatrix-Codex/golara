@@ -57,16 +57,17 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
 	}
-	if _, err := h.accessClaims(request); err != nil {
+	claims, err := h.accessClaims(request)
+	if err != nil {
 		writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "invalid token"})
 		return
 	}
 	if request.Method == http.MethodPost {
-		h.handleInsert(response, request)
+		h.handleInsert(response, request, claims)
 		return
 	}
 	if request.Method == http.MethodPatch || request.Method == http.MethodDelete {
-		h.handleMutation(response, request)
+		h.handleMutation(response, request, claims)
 		return
 	}
 	if h.database == nil {
@@ -87,22 +88,80 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		writeJSON(response, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
-	rows, err := h.database.QueryContext(request.Context(), query.SQL, query.Args...)
+	result, err := h.queryRows(request.Context(), claims, query)
 	if err != nil {
 		writeJSON(response, http.StatusInternalServerError, map[string]string{"error": "database query failed"})
-		return
-	}
-	defer rows.Close()
-	result, err := rowsToJSON(rows)
-	if err != nil {
-		writeJSON(response, http.StatusInternalServerError, map[string]string{"error": "database result failed"})
 		return
 	}
 	response.Header().Set("Content-Range", contentRange(len(result)))
 	writeJSON(response, http.StatusOK, result)
 }
 
-func (h *Handler) handleMutation(response http.ResponseWriter, request *http.Request) {
+func (h *Handler) queryRows(ctx context.Context, claims jwt.Claims, query Query) ([]map[string]any, error) {
+	if claims.Subject == "" {
+		rows, err := h.database.QueryContext(ctx, query.SQL, query.Args...)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		return rowsToJSON(rows)
+	}
+
+	tx, err := h.database.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	rollback := true
+	defer func() {
+		if rollback {
+			_ = tx.Rollback()
+		}
+	}()
+
+	claimsJSON, err := json.Marshal(claims)
+	if err != nil {
+		return nil, err
+	}
+	for _, setting := range []struct {
+		key   string
+		value string
+	}{
+		{"request.jwt.claims", string(claimsJSON)},
+		{"request.jwt.claim.sub", claims.Subject},
+		{"request.jwt.claim.role", claims.Role},
+	} {
+		var ignored string
+		if err := tx.QueryRowContext(ctx, "select set_config($1, $2, true)", setting.key, setting.value).Scan(&ignored); err != nil {
+			return nil, err
+		}
+	}
+	role := claims.Role
+	if role == "" {
+		role = "authenticated"
+	}
+	if role != "anon" && role != "authenticated" && role != "service_role" {
+		return nil, errors.New("unsupported database role")
+	}
+	if _, err := tx.ExecContext(ctx, `SET LOCAL ROLE "`+role+`"`); err != nil {
+		return nil, err
+	}
+	rows, err := tx.QueryContext(ctx, query.SQL, query.Args...)
+	if err != nil {
+		return nil, err
+	}
+	result, err := rowsToJSON(rows)
+	_ = rows.Close()
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	rollback = false
+	return result, nil
+}
+
+func (h *Handler) handleMutation(response http.ResponseWriter, request *http.Request, claims jwt.Claims) {
 	if h.database == nil {
 		writeJSON(response, http.StatusServiceUnavailable, map[string]string{"error": "database unavailable"})
 		return
@@ -134,15 +193,9 @@ func (h *Handler) handleMutation(response http.ResponseWriter, request *http.Req
 		writeJSON(response, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
-	databaseRows, err := h.database.QueryContext(request.Context(), query.SQL, query.Args...)
+	result, err := h.queryRows(request.Context(), claims, query)
 	if err != nil {
 		writeJSON(response, http.StatusInternalServerError, map[string]string{"error": "database mutation failed"})
-		return
-	}
-	defer databaseRows.Close()
-	result, err := rowsToJSON(databaseRows)
-	if err != nil {
-		writeJSON(response, http.StatusInternalServerError, map[string]string{"error": "database result failed"})
 		return
 	}
 	if strings.Contains(request.Header.Get("Prefer"), "return=representation") {
@@ -152,7 +205,7 @@ func (h *Handler) handleMutation(response http.ResponseWriter, request *http.Req
 	response.WriteHeader(http.StatusNoContent)
 }
 
-func (h *Handler) handleInsert(response http.ResponseWriter, request *http.Request) {
+func (h *Handler) handleInsert(response http.ResponseWriter, request *http.Request, claims jwt.Claims) {
 	if h.database == nil {
 		writeJSON(response, http.StatusServiceUnavailable, map[string]string{"error": "database unavailable"})
 		return
@@ -192,15 +245,9 @@ func (h *Handler) handleInsert(response http.ResponseWriter, request *http.Reque
 		writeJSON(response, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
-	databaseRows, err := h.database.QueryContext(request.Context(), query.SQL, query.Args...)
+	result, err := h.queryRows(request.Context(), claims, query)
 	if err != nil {
 		writeJSON(response, http.StatusInternalServerError, map[string]string{"error": "database insert failed"})
-		return
-	}
-	defer databaseRows.Close()
-	result, err := rowsToJSON(databaseRows)
-	if err != nil {
-		writeJSON(response, http.StatusInternalServerError, map[string]string{"error": "database result failed"})
 		return
 	}
 	if strings.Contains(request.Header.Get("Prefer"), "return=representation") {

@@ -26,7 +26,7 @@ The Go rewrite is being developed beside the existing Node control plane. The ex
 
 ## Active work
 
-Continuing from the verified Auth/REST slices into full PostgREST semantics, RLS claim propagation, RPC, Storage, Realtime, metadata/admin APIs, Functions/jobs, client compatibility, and production-safe deployment gates. The unified image is locally buildable and smoke-tested, but it is not yet a complete Supabase replacement.
+Continuing from the verified Auth/REST slices into full PostgREST semantics, RPC, Storage, Realtime, metadata/admin APIs, Functions/jobs, client compatibility, and production-safe deployment gates. The unified image is locally buildable and smoke-tested, but it is not yet a complete Supabase replacement.
 
 ## Required next sequence
 

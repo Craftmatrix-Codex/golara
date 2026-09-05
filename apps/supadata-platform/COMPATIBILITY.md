@@ -8,8 +8,8 @@ Status values are `NOT STARTED`, `PARTIAL`, or `PASS`. No feature is marked `PAS
 | Bearer authentication | PASS | Auth unit tests, protected HTTP tests, and live unauthenticated `401` check |
 | Project list/current/create/select contract | PASS | Registry persistence tests, HTTP tests, race tests, and live binary smoke test |
 | Auth API key gating, settings, signup/login/refresh | PARTIAL | Unit/HTTP tests plus live PostgreSQL repository round-trip; email delivery, OAuth, MFA, admin, logout, recovery, and full GoTrue error parity remain unimplemented |
-| JWT validation and Postgres role mapping | PARTIAL | HS256 sign/verify tests and persisted-user lookup; request JWT claims are not yet applied to PostgreSQL session settings/RLS |
-| REST SELECT/INSERT | PARTIAL | Parameterized SELECT/INSERT builders, identifier-injection tests, sqlmock handler tests, and live PostgreSQL GET integration test; update/delete/upsert, embeds, full filter grammar, RLS claim application, headers, and PostgREST error parity remain unimplemented |
+| JWT validation and Postgres role mapping | PARTIAL | HS256 sign/verify tests, persisted-user lookup, and live RLS claim propagation; asymmetric/JWKS keys, full claim surface, and refresh/session parity remain unimplemented |
+| REST SELECT/INSERT/UPDATE/DELETE | PARTIAL | Parameterized SELECT/INSERT/UPDATE/DELETE builders, API-key/JWT gate, request-claim transaction propagation, RLS integration test, identifier-injection tests, and live PostgreSQL GET integration test; upsert, embeds...[truncated]
 | RPC | NOT STARTED | — |
 | Realtime WebSocket protocol | NOT STARTED | — |
 | Storage upload/download/signed URLs | NOT STARTED | — |
