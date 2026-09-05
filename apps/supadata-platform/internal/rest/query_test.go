@@ -1,0 +1,53 @@
+package rest
+
+import (
+	"net/url"
+	"testing"
+)
+
+func TestBuildSelectQueryUsesParameterizedFiltersAndSafeIdentifiers(t *testing.T) {
+	query, err := BuildSelectQuery("public", "todos", url.Values{
+		"select": {"id,name"},
+		"id":     {"eq.42"},
+		"title":  {"ilike.%bug%"},
+		"order":  {"created_at.desc"},
+		"limit":  {"10"},
+		"offset": {"20"},
+	})
+	if err != nil {
+		t.Fatalf("BuildSelectQuery() error = %v", err)
+	}
+	wantSQL := `SELECT "id", "name" FROM "public"."todos" WHERE "id" = $1 AND "title" ILIKE $2 ORDER BY "created_at" DESC LIMIT 10 OFFSET 20`
+	if query.SQL != wantSQL {
+		t.Fatalf("SQL = %q, want %q", query.SQL, wantSQL)
+	}
+	if len(query.Args) != 2 || query.Args[0] != "42" || query.Args[1] != "%bug%" {
+		t.Fatalf("Args = %#v, want parameter values", query.Args)
+	}
+}
+
+func TestBuildSelectQueryRejectsInjectionInIdentifiers(t *testing.T) {
+	if _, err := BuildSelectQuery("public", "todos;drop table users", url.Values{}); err == nil {
+		t.Fatal("unsafe table identifier was accepted")
+	}
+	if _, err := BuildSelectQuery("public", "todos", url.Values{"select": {"id,pg_sleep(1)"}}); err == nil {
+		t.Fatal("unsafe select identifier was accepted")
+	}
+}
+
+func TestBuildSelectQuerySupportsPostgRESTNullAndBooleanFilters(t *testing.T) {
+	query, err := BuildSelectQuery("public", "todos", url.Values{
+		"deleted_at": {"is.null"},
+		"archived":   {"is.false"},
+	})
+	if err != nil {
+		t.Fatalf("BuildSelectQuery() error = %v", err)
+	}
+	wantSQL := `SELECT * FROM "public"."todos" WHERE "archived" IS FALSE AND "deleted_at" IS NULL`
+	if query.SQL != wantSQL {
+		t.Fatalf("SQL = %q, want %q", query.SQL, wantSQL)
+	}
+	if len(query.Args) != 0 {
+		t.Fatalf("Args = %#v, want none", query.Args)
+	}
+}
