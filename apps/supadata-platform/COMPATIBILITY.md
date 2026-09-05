@@ -10,7 +10,7 @@ Status values are `NOT STARTED`, `PARTIAL`, or `PASS`. No feature is marked `PAS
 | Auth API key gating, settings, signup/login/refresh | PARTIAL | Unit/HTTP tests plus live PostgreSQL repository round-trip; email delivery, OAuth, MFA, admin, logout, recovery, and full GoTrue error parity remain unimplemented |
 | JWT validation and Postgres role mapping | PARTIAL | HS256 sign/verify tests, persisted-user lookup, and live RLS claim propagation; asymmetric/JWKS keys, full claim surface, and refresh/session parity remain unimplemented |
 | REST SELECT/INSERT/UPDATE/DELETE | PARTIAL | Parameterized SELECT/INSERT/UPDATE/DELETE builders, API-key/JWT gate, request-claim transaction propagation, RLS integration test, identifier-injection tests, and live PostgreSQL GET integration test; upsert, embeds...[truncated]
-| RPC | NOT STARTED | — |
+| RPC | PARTIAL | POST `/rest/v1/rpc/{function}` with validated named PostgreSQL arguments, API-key/JWT/RLS transaction path, and sqlmock handler coverage; overloaded functions, scalar/object return parity, and exact PostgREST errors remain unimplemented |
 | Realtime WebSocket protocol | NOT STARTED | — |
 | Storage upload/download/signed URLs | NOT STARTED | — |
 | Database metadata/admin API | NOT STARTED | — |

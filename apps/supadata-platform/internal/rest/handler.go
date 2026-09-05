@@ -63,6 +63,10 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		return
 	}
 	if request.Method == http.MethodPost {
+		if strings.HasPrefix(request.URL.Path, "/rest/v1/rpc/") {
+			h.handleRPC(response, request, claims)
+			return
+		}
 		h.handleInsert(response, request, claims)
 		return
 	}
@@ -94,6 +98,39 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		return
 	}
 	response.Header().Set("Content-Range", contentRange(len(result)))
+	writeJSON(response, http.StatusOK, result)
+}
+
+func (h *Handler) handleRPC(response http.ResponseWriter, request *http.Request, claims jwt.Claims) {
+	if h.database == nil {
+		writeJSON(response, http.StatusServiceUnavailable, map[string]string{"error": "database unavailable"})
+		return
+	}
+	function := strings.TrimPrefix(request.URL.Path, "/rest/v1/rpc/")
+	if function == "" || strings.Contains(function, "/") {
+		writeJSON(response, http.StatusNotFound, map[string]string{"error": "function not found"})
+		return
+	}
+	var arguments map[string]any
+	decoder := json.NewDecoder(http.MaxBytesReader(response, request.Body, 10<<20))
+	if err := decoder.Decode(&arguments); err != nil {
+		writeJSON(response, http.StatusBadRequest, map[string]string{"error": "invalid RPC body"})
+		return
+	}
+	schema := request.Header.Get("Content-Profile")
+	if schema == "" {
+		schema = h.schema
+	}
+	query, err := BuildRPCQuery(schema, function, arguments)
+	if err != nil {
+		writeJSON(response, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	result, err := h.queryRows(request.Context(), claims, query)
+	if err != nil {
+		writeJSON(response, http.StatusInternalServerError, map[string]string{"error": "RPC execution failed"})
+		return
+	}
 	writeJSON(response, http.StatusOK, result)
 }
 
