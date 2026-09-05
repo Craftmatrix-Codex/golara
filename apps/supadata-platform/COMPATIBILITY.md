@@ -11,7 +11,7 @@ Status values are `NOT STARTED`, `PARTIAL`, or `PASS`. No feature is marked `PAS
 | JWT validation and Postgres role mapping | PARTIAL | HS256 sign/verify tests, persisted-user lookup, and live RLS claim propagation; asymmetric/JWKS keys, full claim surface, and refresh/session parity remain unimplemented |
 | REST SELECT/INSERT/UPDATE/DELETE | PARTIAL | Parameterized SELECT/INSERT/UPDATE/DELETE builders, API-key/JWT gate, request-claim transaction propagation, RLS integration test, identifier-injection tests, and live PostgreSQL GET integration test; upsert, embeds...[truncated]
 | RPC | PARTIAL | POST `/rest/v1/rpc/{function}` with validated named PostgreSQL arguments, API-key/JWT/RLS transaction path, and sqlmock handler coverage; overloaded functions, scalar/object return parity, and exact PostgREST errors remain unimplemented |
-| Realtime WebSocket protocol | NOT STARTED | — |
+| Realtime WebSocket protocol | PARTIAL | `/realtime/v1/websocket` API-key handshake, optional JWT validation, Phoenix join/leave/heartbeat replies, public-topic authorization, WebSocket integration tests, and NGINX upgrade routing; broadcast, presence, PostgreSQL changes, tenant authorization, and exact protocol parity remain unimplemented |
 | Storage upload/download/list/delete | PARTIAL | API-key authorization, service/user mutation checks, path traversal rejection, size limits, S3-compatible SeaweedFS round-trip, and handler tests; bucket metadata, signed URLs, policies, resumable uploads, and exact Storage error parity remain unimplemented |
 | Database metadata/admin API | NOT STARTED | — |
 | Edge functions | NOT STARTED | — |

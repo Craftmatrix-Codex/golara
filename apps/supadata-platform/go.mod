@@ -4,6 +4,7 @@ go 1.22
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/minio/minio-go/v7 v7.0.80
 	golang.org/x/crypto v0.33.0

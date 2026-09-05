@@ -16,6 +16,7 @@ import (
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/auth"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/config"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/httpapi"
+	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/realtime"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/registry"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/rest"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/storage"
@@ -33,6 +34,7 @@ func main() {
 	var authService httpapi.AuthService
 	var restHandler http.Handler
 	var storageHandler http.Handler
+	var realtimeHandler http.Handler
 	if cfg.DatabaseURL != "" {
 		database, err = sql.Open("pgx", cfg.DatabaseURL)
 		if err != nil {
@@ -83,6 +85,13 @@ func main() {
 			Audience:  "authenticated",
 		})
 	}
+	realtimeHandler = realtime.NewHandler(realtime.HandlerOptions{
+		APIKeys:       realtime.APIKeyConfig{Anon: cfg.AnonKey, ServiceRole: cfg.ServiceRoleKey},
+		JWTSecret:     []byte(cfg.JWTSecret),
+		Issuer:        cfg.AuthIssuer,
+		Audience:      "authenticated",
+		AllowedOrigin: cfg.AllowedOrigin,
+	})
 
 	server := &http.Server{
 		Addr: "0.0.0.0:" + formatPort(cfg.Port),
@@ -95,6 +104,7 @@ func main() {
 			AuthSettings:  httpapi.AuthSettings{EmailEnabled: cfg.AuthEmailEnabled, PhoneEnabled: cfg.AuthPhoneEnabled, MailerAutoconfirm: cfg.AuthAutoConfirm, SMSProvider: cfg.SMSProvider, DisableSignup: cfg.AuthDisableSignup},
 			REST:          restHandler,
 			Storage:       storageHandler,
+			Realtime:      realtimeHandler,
 		}).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       60 * time.Second,
