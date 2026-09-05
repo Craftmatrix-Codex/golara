@@ -22,7 +22,7 @@ services:
       - coolify
     labels:
       traefik.enable: "true"
-      traefik.http.routers.supadata-api.rule: Host(`api.supabase.craftmatrix.org`)
+      traefik.http.routers.supadata-api.rule: Host(`api-supa.craftmatrix.org`)
       traefik.http.routers.supadata-api.entrypoints: https
       traefik.http.routers.supadata-api.tls: "true"
       traefik.http.routers.supadata-api.tls.certresolver: letsencrypt
