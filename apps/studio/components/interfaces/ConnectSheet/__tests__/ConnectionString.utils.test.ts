@@ -94,11 +94,20 @@ describe('buildConnectionStringWithPassword', () => {
   })
 
   test('replaces every password placeholder with the encoded password', () => {
-    const uri = `postgresql://postgres:${PASSWORD_PLACEHOLDER}@localhost:5432/postgres?password=${PASSWORD_PLACEHOLDER}`
+    const uri = `postgresql://postgres:***@localhost:5432/postgres?password=${PASSWORD_PLACEHOLDER}`
 
     expect(buildConnectionStringWithPassword(uri, 'p@ss/word#1')).toBe(
       'postgresql://postgres:p%40ss%2Fword%231@localhost:5432/postgres?password=p%40ss%2Fword%231'
     )
+  })
+
+  test('reveals the URI password used by the Connect screen', () => {
+    expect(
+      buildConnectionStringWithPassword(
+        'postgresql://postgres:***@13.140.162.195:5432/postgres',
+        'db-secret'
+      )
+    ).toBe('postgresql://postgres:db-secret@13.140.162.195:5432/postgres')
   })
 })
 

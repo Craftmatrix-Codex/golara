@@ -143,7 +143,12 @@ export const buildConnectionStringWithPassword = (
     }
   })()
 
-  return connectionString.split(PASSWORD_PLACEHOLDER).join(encodedPassword)
+  // The URI formatter uses `***`, while language-specific formatters use the
+  // legacy `[YOUR-PASSWORD]` token. Reveal must handle both forms.
+  return connectionString
+    .split(PASSWORD_PLACEHOLDER)
+    .join(encodedPassword)
+    .replace(/:\*{3}@(?=[^/\s]+\/)/g, `:${encodedPassword}@`)
 }
 
 export const buildConnectionParameters = (params: ConnectionParams) => [
