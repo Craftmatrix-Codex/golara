@@ -78,6 +78,7 @@ type ServerOptions struct {
 	APIKeys              APIKeyConfig
 	AuthSettings         AuthSettings
 	REST                 http.Handler
+	GraphQL              http.Handler
 	Storage              http.Handler
 	Realtime             http.Handler
 }
@@ -95,6 +96,7 @@ type Server struct {
 	apiKeys              APIKeyConfig
 	authSettings         AuthSettings
 	rest                 http.Handler
+	graphql              http.Handler
 	storage              http.Handler
 	realtime             http.Handler
 }
@@ -104,7 +106,7 @@ func NewServer(options ServerOptions) *Server {
 	if origin == "" {
 		origin = "*"
 	}
-	return &Server{token: options.Token, controlPlaneUsername: options.ControlPlaneUsername, controlPlanePassword: options.ControlPlanePassword, allowedOrigin: origin, registry: options.Registry, projectResolver: options.ProjectResolver, databaseResolver: options.DatabaseResolver, requireProjectScope: options.RequireProjectScope, auth: options.Auth, apiKeys: options.APIKeys, authSettings: options.AuthSettings, rest: options.REST, storage: options.Storage, realtime: options.Realtime}
+	return &Server{token: options.Token, controlPlaneUsername: options.ControlPlaneUsername, controlPlanePassword: options.ControlPlanePassword, allowedOrigin: origin, registry: options.Registry, projectResolver: options.ProjectResolver, databaseResolver: options.DatabaseResolver, requireProjectScope: options.RequireProjectScope, auth: options.Auth, apiKeys: options.APIKeys, authSettings: options.AuthSettings, rest: options.REST, graphql: options.GraphQL, storage: options.Storage, realtime: options.Realtime}
 }
 
 func (s *Server) Handler() http.Handler {
@@ -112,7 +114,7 @@ func (s *Server) Handler() http.Handler {
 }
 
 func (s *Server) serveHTTP(response http.ResponseWriter, request *http.Request) {
-	response.Header().Set("Access-Control-Allow-Headers", "content-type, authorization, apikey, x-client-info")
+	response.Header().Set("Access-Control-Allow-Headers", "content-type, authorization, apikey, x-client-info, x-graphql-authorization")
 	response.Header().Set("Access-Control-Allow-Methods", "DELETE,GET,OPTIONS,POST,PATCH,PUT")
 	response.Header().Set("Access-Control-Allow-Origin", s.allowedOrigin)
 
@@ -120,12 +122,25 @@ func (s *Server) serveHTTP(response http.ResponseWriter, request *http.Request) 
 		response.WriteHeader(http.StatusNoContent)
 		return
 	}
+	projectGraphQLPath := strings.HasPrefix(request.URL.Path, "/api/projects/") && strings.HasSuffix(request.URL.Path, "/api/graphql")
+	request = normalizeGraphQLProjectPath(request)
+	if projectGraphQLPath && request.Header.Get("apikey") == "" && (request.Header.Get("Authorization") != "" || request.Header.Get("x-graphql-authorization") != "") {
+		request.Header.Set("apikey", s.apiKeys.Anon)
+	}
 	if isProjectScopedPath(request.URL.Path) {
 		scopedRequest, ok := s.withProjectScope(response, request)
 		if !ok {
 			return
 		}
 		request = scopedRequest
+	}
+	if request.URL.Path == "/graphql/v1" {
+		if s.graphql == nil {
+			writeJSON(response, http.StatusServiceUnavailable, map[string]string{"error": "GraphQL service unavailable"})
+			return
+		}
+		s.graphql.ServeHTTP(response, request)
+		return
 	}
 	if strings.HasPrefix(request.URL.Path, "/rest/v1/") {
 		if s.rest == nil {
@@ -351,10 +366,28 @@ func (s *Server) serveHTTP(response http.ResponseWriter, request *http.Request) 
 }
 
 func isProjectScopedPath(path string) bool {
-	if strings.HasPrefix(path, "/rest/v1/") || strings.HasPrefix(path, "/storage/v1/") || strings.HasPrefix(path, "/realtime/v1/") {
+	if strings.HasPrefix(path, "/rest/v1/") || strings.HasPrefix(path, "/storage/v1/") || strings.HasPrefix(path, "/realtime/v1/") || path == "/graphql/v1" {
 		return true
 	}
 	return strings.HasPrefix(path, "/auth/v1/") && path != "/auth/v1/health"
+}
+
+func normalizeGraphQLProjectPath(request *http.Request) *http.Request {
+	const prefix = "/api/projects/"
+	const suffix = "/api/graphql"
+	if !strings.HasPrefix(request.URL.Path, prefix) || !strings.HasSuffix(request.URL.Path, suffix) {
+		return request
+	}
+	projectID := strings.TrimSuffix(strings.TrimPrefix(request.URL.Path, prefix), suffix)
+	if projectID == "" || strings.Contains(projectID, "/") {
+		return request
+	}
+	cloned := request.Clone(request.Context())
+	cloned.URL.Path = "/graphql/v1"
+	if cloned.Header.Get("X-Supadata-Project") == "" {
+		cloned.Header.Set("X-Supadata-Project", projectID)
+	}
+	return cloned
 }
 
 func (s *Server) withProjectScope(response http.ResponseWriter, request *http.Request) (*http.Request, bool) {

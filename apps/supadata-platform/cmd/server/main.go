@@ -15,6 +15,7 @@ import (
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/auth"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/config"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/database"
+	graphqlapi "github.com/renzaspiras/supabase/apps/supadata-platform/internal/graphql"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/httpapi"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/provisioning"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/realtime"
@@ -53,6 +54,7 @@ func main() {
 
 	var authService httpapi.AuthService
 	var restHandler http.Handler
+	var graphqlHandler http.Handler
 	var storageHandler http.Handler
 	var realtimeHandler http.Handler
 	var objectStore *storage.S3Store
@@ -70,6 +72,7 @@ func main() {
 			AutoConfirm: cfg.AuthAutoConfirm,
 		})
 		restHandler = rest.NewHandler(databaseConnections.Primary, rest.HandlerOptions{APIKeys: rest.APIKeyConfig{Anon: cfg.AnonKey, ServiceRole: cfg.ServiceRoleKey}, JWTSecret: []byte(cfg.JWTSecret), Issuer: cfg.AuthIssuer, Audience: "authenticated"})
+		graphqlHandler = graphqlapi.NewHandler(graphqlapi.HandlerOptions{Database: databaseConnections.Primary, APIKeys: graphqlapi.APIKeyConfig{Anon: cfg.AnonKey, ServiceRole: cfg.ServiceRoleKey}, JWTSecret: []byte(cfg.JWTSecret), Issuer: cfg.AuthIssuer, Audience: "authenticated"})
 	} else {
 		slog.Warn("PostgreSQL is not configured; Auth routes are unavailable")
 	}
@@ -122,6 +125,7 @@ func main() {
 			APIKeys:              httpapi.APIKeyConfig{Anon: cfg.AnonKey, ServiceRole: cfg.ServiceRoleKey},
 			AuthSettings:         httpapi.AuthSettings{EmailEnabled: cfg.AuthEmailEnabled, PhoneEnabled: cfg.AuthPhoneEnabled, MailerAutoconfirm: cfg.AuthAutoConfirm, SMSProvider: cfg.SMSProvider, DisableSignup: cfg.AuthDisableSignup},
 			REST:                 restHandler,
+			GraphQL:              graphqlHandler,
 			Storage:              storageHandler,
 			Realtime:             realtimeHandler,
 		}).Handler(),
