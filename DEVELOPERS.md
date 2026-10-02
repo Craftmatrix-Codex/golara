@@ -47,19 +47,19 @@ All of our apps are in this [Turborepo](https://turborepo.org/docs), which make 
 
 ### Fork the repo
 
-To contribute code to [Supabase](https://supabase.com), you must fork the [Supabase repo](https://github.com/supabase/supabase).
+To contribute code to [GoLara](https://github.com/Craftmatrix-Codex/golara), fork the [GoLara repository](https://github.com/Craftmatrix-Codex/golara).
 
 ### Clone the repo
 
 1. Clone your GitHub forked repo:
 
    ```sh
-   git clone https://github.com/<github_username>/supabase.git
+   git clone https://github.com/<github_username>/golara.git
    ```
 
-2. Go to the Supabase directory:
+2. Go to the GoLara directory:
    ```sh
-   cd supabase
+   cd golara
    ```
 
 ### Install dependencies

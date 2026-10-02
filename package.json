@@ -74,7 +74,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/supabase/supabase.git"
+    "url": "git+https://github.com/Craftmatrix-Codex/golara.git"
   },
   "engines": {
     "pnpm": "11.13",
