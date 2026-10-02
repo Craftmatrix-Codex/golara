@@ -322,7 +322,8 @@ class StudioController
             if (preg_match('/\\bauth\\.(users|identities)\\b/i', $query) === 1) {
                 $this->ensureAuthCompatibilitySchema($pdo);
             }
-            $statement = $pdo->query($query);
+            $statementQuery = $this->executeLeadingFunctionStatement($pdo, $query);
+            $statement = $pdo->query($statementQuery);
             if ($statement === false) return response()->json([]);
 
             $rows = $statement->fetchAll();
@@ -331,6 +332,23 @@ class StudioController
             report($exception);
             return response()->json(['error' => ['message' => 'Database metadata query failed']], 502);
         }
+    }
+
+    private function executeLeadingFunctionStatement(PDO $pdo, string $query): string
+    {
+        if (preg_match('/^\\s*CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\b/is', $query) !== 1) {
+            return $query;
+        }
+
+        $functionEnd = strpos($query, '$$;');
+        if ($functionEnd === false) {
+            return $query;
+        }
+
+        $prefixLength = $functionEnd + 3;
+        $pdo->exec(substr($query, 0, $prefixLength));
+
+        return ltrim(substr($query, $prefixLength));
     }
 
     private function ensureAuthCompatibilitySchema(PDO $pdo): void
