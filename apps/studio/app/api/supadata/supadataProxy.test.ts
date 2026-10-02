@@ -1,8 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { proxySupadataRequest } from './supadataProxy'
+import { proxySupadataRequest, resolveSupadataPath } from './supadataProxy'
 
 describe('proxySupadataRequest', () => {
+  it('routes project detail requests through the platform namespace', () => {
+    expect(resolveSupadataPath('/api/projects/default')).toBe('/api/platform/projects/default')
+    expect(resolveSupadataPath('/api/projects/default/settings')).toBe(
+      '/api/platform/projects/default/settings'
+    )
+    expect(resolveSupadataPath('/api/projects')).toBe('/api/projects')
+  })
+
   it('forwards the request to the control plane with the server-only bearer token', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response('{"projects":[]}', { status: 200 }))
     const request = new Request('http://studio.test/api/supadata/projects', {

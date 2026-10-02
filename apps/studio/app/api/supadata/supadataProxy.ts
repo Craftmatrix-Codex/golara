@@ -1,5 +1,14 @@
 type FetchImplementation = typeof fetch
 
+export function resolveSupadataPath(path: string) {
+  // Project detail/settings endpoints live under Laravel's platform namespace.
+  // Keep the top-level project registry on the Go control-plane route.
+  if (/^\/api\/projects\/[^/]+(?:\/|$)/.test(path)) {
+    return path.replace(/^\/api\/projects\//, '/api/platform/projects/')
+  }
+  return path
+}
+
 export async function proxySupadataRequest(
   request: Request,
   {
@@ -19,7 +28,7 @@ export async function proxySupadataRequest(
   headers.set('authorization', `Bearer ${token}`)
   headers.delete('host')
   headers.delete('content-length')
-  const response = await fetchImpl(`${baseUrl.replace(/\/$/, '')}${path}`, {
+  const response = await fetchImpl(`${baseUrl.replace(/\/$/, '')}${resolveSupadataPath(path)}`, {
     method: request.method,
     headers,
     body:
