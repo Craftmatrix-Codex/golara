@@ -8,6 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // The control plane uses SQLite; auth.* belongs to the project PostgreSQL database.
+        if (Schema::getConnection()->getDriverName() !== 'pgsql') {
+            return;
+        }
+
         if (! Schema::hasTable('auth.users')) {
             Schema::create('auth.users', function (Blueprint $table): void {
                 $table->uuid('id')->primary();

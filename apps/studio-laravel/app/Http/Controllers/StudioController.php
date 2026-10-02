@@ -319,6 +319,9 @@ class StudioController
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             ]);
+            if (preg_match('/\\bauth\\.(users|identities)\\b/i', $query) === 1) {
+                $this->ensureAuthCompatibilitySchema($pdo);
+            }
             $statement = $pdo->query($query);
             if ($statement === false) return response()->json([]);
 
@@ -327,6 +330,21 @@ class StudioController
         } catch (PDOException|RuntimeException $exception) {
             report($exception);
             return response()->json(['error' => ['message' => 'Database metadata query failed']], 502);
+        }
+    }
+
+    private function ensureAuthCompatibilitySchema(PDO $pdo): void
+    {
+        foreach ([
+            'CREATE SCHEMA IF NOT EXISTS auth',
+            "CREATE TABLE IF NOT EXISTS auth.users (id uuid primary key, email text, banned_until timestamptz, created_at timestamptz not null default now(), confirmed_at timestamptz, email_confirmed_at timestamptz, confirmation_sent_at timestamptz, is_anonymous boolean not null default false, is_sso_user boolean not null default false, invited_at timestamptz, last_sign_in_at timestamptz, phone text, phone_confirmed_at timestamptz, raw_app_meta_data jsonb not null default '{}'::jsonb, raw_user_meta_data jsonb not null default '{}'::jsonb, updated_at timestamptz not null default now())",
+            "ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS email_confirmed_at timestamptz",
+            "ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS phone_confirmed_at timestamptz",
+            "ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS confirmed_at timestamptz",
+            "CREATE TABLE IF NOT EXISTS auth.identities (id uuid primary key, user_id uuid not null, provider text not null, identity_data jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), updated_at timestamptz not null default now())",
+            'CREATE INDEX IF NOT EXISTS identities_user_id_idx ON auth.identities(user_id)',
+        ] as $statement) {
+            $pdo->exec($statement);
         }
     }
 
