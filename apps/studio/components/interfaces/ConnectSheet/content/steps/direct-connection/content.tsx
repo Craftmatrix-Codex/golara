@@ -227,8 +227,10 @@ function DirectConnectionContent({ state, deploymentMode }: StepContentProps) {
                   }
                 }}
               >
-                {revealedDatabasePassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                {revealedDatabasePassword ? 'Hide password' : 'Show password'}
+                <span className="flex items-center gap-1.5 whitespace-nowrap">
+                  {revealedDatabasePassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                  {revealedDatabasePassword ? 'Hide password' : 'Show password'}
+                </span>
               </Button>
             )}
           </div>
