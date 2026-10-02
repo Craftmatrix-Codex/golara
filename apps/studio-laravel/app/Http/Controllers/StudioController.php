@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use PDO;
+use PDOException;
 use App\Services\PlatformTelemetry;
 use App\Services\StudioContentStore;
 use InvalidArgumentException;
@@ -269,15 +271,40 @@ class StudioController
         abort_unless(is_string($query) && trim($query) !== '', 422, 'query is required');
 
         $key = $request->query('key');
-        if (is_string($key) && str_starts_with($key, 'entity-types-')) {
-            return response()->json([
-                ['data' => ['entities' => [], 'count' => 0]],
-            ]);
+        $connectionString = (string) env('SUPADATA_DATABASE_URL', env('DATABASE_URL', ''));
+        if ($connectionString === '') {
+            if (is_string($key) && str_starts_with($key, 'entity-types-')) {
+                return response()->json([['data' => ['entities' => [], 'count' => 0]]]);
+            }
+
+            return response()->json([]);
         }
 
-        // Other metadata queries currently use an empty result set as the
-        // self-hosted no-schema state.
-        return response()->json([]);
+        try {
+            $parsed = parse_url($connectionString);
+            if (! is_array($parsed) || ! isset($parsed['host'], $parsed['path'])) {
+                throw new RuntimeException('invalid database connection URL');
+            }
+
+            $dsn = sprintf(
+                'pgsql:host=%s;port=%d;dbname=%s',
+                $parsed['host'],
+                (int) ($parsed['port'] ?? 5432),
+                ltrim((string) $parsed['path'], '/'),
+            );
+            $pdo = new PDO($dsn, rawurldecode((string) ($parsed['user'] ?? '')), rawurldecode((string) ($parsed['pass'] ?? '')), [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            ]);
+            $statement = $pdo->query($query);
+            if ($statement === false) return response()->json([]);
+
+            $rows = $statement->fetchAll();
+            return response()->json($rows);
+        } catch (PDOException|RuntimeException $exception) {
+            report($exception);
+            return response()->json(['error' => ['message' => 'Database metadata query failed']], 502);
+        }
     }
 
     public function content(Request $request, string $project, StudioContentStore $store): JsonResponse
