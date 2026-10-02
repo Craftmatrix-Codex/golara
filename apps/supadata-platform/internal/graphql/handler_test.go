@@ -25,7 +25,7 @@ func TestHandlerResolvesGraphQLThroughPgGraphql(t *testing.T) {
 	mock.ExpectQuery(`select set_config`).WillReturnRows(sqlmock.NewRows([]string{"set_config"}).AddRow(""))
 	mock.ExpectQuery(`select set_config`).WillReturnRows(sqlmock.NewRows([]string{"set_config"}).AddRow(""))
 	mock.ExpectQuery(`SELECT graphql\.resolve\(\$1, \$2::jsonb, \$3, \$4::jsonb\)`).
-		WithArgs("{ viewer { id } }", `{"id":1}`, "", `{"trace":true}`).
+		WithArgs("{ viewer { id } }", `{"id":1}`, nil, `{"trace":true}`).
 		WillReturnRows(sqlmock.NewRows([]string{"resolve"}).AddRow([]byte(`{"data":{"viewer":{"id":"1"}}}`)))
 	mock.ExpectCommit()
 

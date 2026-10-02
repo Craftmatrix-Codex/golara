@@ -277,6 +277,7 @@ class StudioController
             'apikey' => (string) env('SUPABASE_ANON_KEY', env('ANON_KEY', '')),
         ];
         foreach (['Authorization', 'x-graphql-authorization'] as $header) {
+        if ($header === 'Authorization' && ! str_starts_with((string) $request->header($header), 'Bearer ')) continue;
             if ($request->hasHeader($header)) $headers[$header] = $request->header($header);
         }
 

@@ -108,10 +108,15 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		return
 	}
 
+	operationName := any(nil)
+	if strings.TrimSpace(body.OperationName) != "" {
+		operationName = body.OperationName
+	}
+
 	var result []byte
 	err = tx.QueryRowContext(request.Context(),
 		`SELECT graphql.resolve($1, $2::jsonb, $3, $4::jsonb)`,
-		body.Query, string(variables), body.OperationName, string(extensions),
+		body.Query, string(variables), operationName, string(extensions),
 	).Scan(&result)
 	if err != nil {
 		writeJSON(response, http.StatusBadGateway, map[string]any{"errors": []map[string]string{{"message": "GraphQL execution failed"}}})
