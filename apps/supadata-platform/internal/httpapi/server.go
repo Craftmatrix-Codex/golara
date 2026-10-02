@@ -124,6 +124,7 @@ func (s *Server) serveHTTP(response http.ResponseWriter, request *http.Request) 
 	}
 	projectGraphQLPath := strings.HasPrefix(request.URL.Path, "/api/projects/") && strings.HasSuffix(request.URL.Path, "/api/graphql")
 	request = normalizeGraphQLProjectPath(request)
+	request = normalizeProjectScopedSDKPath(request)
 	if projectGraphQLPath && request.Header.Get("apikey") == "" && (request.Header.Get("Authorization") != "" || request.Header.Get("x-graphql-authorization") != "") {
 		request.Header.Set("apikey", s.apiKeys.Anon)
 	}
@@ -388,6 +389,33 @@ func normalizeGraphQLProjectPath(request *http.Request) *http.Request {
 		cloned.Header.Set("X-Supadata-Project", projectID)
 	}
 	return cloned
+}
+
+func normalizeProjectScopedSDKPath(request *http.Request) *http.Request {
+	const prefix = "/api/projects/"
+	if !strings.HasPrefix(request.URL.Path, prefix) {
+		return request
+	}
+
+	remainder := strings.TrimPrefix(request.URL.Path, prefix)
+	separator := strings.IndexByte(remainder, '/')
+	if separator <= 0 || separator == len(remainder)-1 {
+		return request
+	}
+	projectID := remainder[:separator]
+	sdkPath := "/" + remainder[separator+1:]
+	for _, servicePrefix := range []string{"/rest/v1/", "/auth/v1/", "/storage/v1/", "/realtime/v1/", "/graphql/v1"} {
+		if !strings.HasPrefix(sdkPath, servicePrefix) {
+			continue
+		}
+		cloned := request.Clone(request.Context())
+		cloned.URL.Path = sdkPath
+		if cloned.Header.Get("X-Supadata-Project") == "" {
+			cloned.Header.Set("X-Supadata-Project", projectID)
+		}
+		return cloned
+	}
+	return request
 }
 
 func (s *Server) withProjectScope(response http.ResponseWriter, request *http.Request) (*http.Request, bool) {

@@ -545,7 +545,7 @@ class StudioController
     {
         $record = $this->projectRecord($project);
         $database = $record['scope']['database'] ?? [];
-        $endpoint = $this->projectEndpointParts($record);
+        $endpoint = $this->projectEndpointParts($record, $project);
         $connection = $this->databaseConnectionDetails();
 
         return response()->json([
@@ -803,7 +803,7 @@ class StudioController
             || str_ends_with($normalized, '.localhost');
     }
 
-    private function projectEndpointParts(array $record): array
+    private function projectEndpointParts(array $record, ?string $project = null): array
     {
         $endpoint = $this->projectEndpoint($record);
         $parsed = parse_url($endpoint);
@@ -812,6 +812,9 @@ class StudioController
             $host = $parsed['host'];
             if (isset($parsed['port'])) {
                 $host .= ':' . $parsed['port'];
+            }
+            if (is_string($project) && trim($project) !== '') {
+                $host .= '/api/projects/' . rawurlencode($project);
             }
 
             return [

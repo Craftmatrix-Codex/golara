@@ -29,8 +29,8 @@ class StudioDynamicProjectTest extends TestCase
                 ->getJson('/api/platform/projects/default/settings')
                 ->assertOk()
                 ->assertJsonPath('app_config.protocol', 'https')
-                ->assertJsonPath('app_config.endpoint', 'go-alpha.craftmatrix.org')
-                ->assertJsonPath('app_config.storage_endpoint', 'go-alpha.craftmatrix.org')
+                ->assertJsonPath('app_config.endpoint', 'go-alpha.craftmatrix.org/api/projects/default')
+                ->assertJsonPath('app_config.storage_endpoint', 'go-alpha.craftmatrix.org/api/projects/default')
                 ->assertJsonMissing(['app_config.endpoint' => 'localhost']);
         } finally {
             @unlink($path);
@@ -77,8 +77,8 @@ class StudioDynamicProjectTest extends TestCase
                 ->assertJsonPath('ref', 'video-project')
                 ->assertJsonPath('name', 'Video Project')
                 ->assertJsonPath('app_config.protocol', 'https')
-                ->assertJsonPath('app_config.endpoint', 'video-project.supabase.example.com')
-                ->assertJsonPath('app_config.storage_endpoint', 'video-project.supabase.example.com');
+                ->assertJsonPath('app_config.endpoint', 'video-project.supabase.example.com/api/projects/video-project')
+                ->assertJsonPath('app_config.storage_endpoint', 'video-project.supabase.example.com/api/projects/video-project');
         } finally {
             @unlink($path);
         }
