@@ -3,6 +3,7 @@
 return [
     'auth_username' => env('STUDIO_AUTH_USERNAME', env('SUPADATA_STUDIO_AUTH_USERNAME', 'studio')),
     'auth_password' => env('STUDIO_AUTH_PASSWORD', env('SUPADATA_STUDIO_AUTH_PASSWORD', 'password')),
+    'control_plane_token' => env('SUPADATA_CONTROL_PLANE_TOKEN', ''),
     'client_shell' => env('STUDIO_CLIENT_SHELL', public_path('studio/index.html')),
     'registry_path' => env('SUPADATA_REGISTRY_PATH', env('SUPADATA_DATA_DIR', '/var/lib/supadata') . '/registry.json'),
     'content_path' => env('SUPADATA_CONTENT_PATH', env('SUPADATA_DATA_DIR', '/var/lib/supadata') . '/content'),

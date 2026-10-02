@@ -1,3 +1,4 @@
+import { IS_PLATFORM } from 'common'
 import { Box, Check, ChevronsUpDown, Eye, EyeOff, KeyRound, Plus, RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -46,7 +47,7 @@ interface RotatedCredential {
   value: string
 }
 
-const proxyPath = '/api/supadata'
+const proxyPath = IS_PLATFORM ? '/api/supadata' : '/api/platform'
 
 export function SupadataProjectSelector({
   currentId,
@@ -78,9 +79,10 @@ export function SupadataProjectSelector({
     try {
       const response = await fetch(`${proxyPath}/projects`)
       if (!response.ok) throw new Error('Failed to load Supadata projects')
-      const data = (await response.json()) as { projects: SupadataProject[] }
-      setProjects(data.projects)
-      setSelectedId(data.projects.find((project) => project.current)?.id ?? currentId ?? '')
+      const payload = (await response.json()) as { projects: SupadataProject[] } | SupadataProject[]
+      const nextProjects = Array.isArray(payload) ? payload : payload.projects
+      setProjects(nextProjects)
+      setSelectedId(nextProjects.find((project) => project.current)?.id ?? currentId ?? '')
       setError(null)
     } catch (fetchError: unknown) {
       setError(fetchError instanceof Error ? fetchError.message : 'Failed to load projects')

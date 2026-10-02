@@ -14,6 +14,12 @@ class StudioBasicAuth
         $password = (string) config('studio.auth_password');
         $providedUsername = (string) $request->getUser();
         $providedPassword = (string) $request->getPassword();
+        $providedBearer = (string) $request->bearerToken();
+        $controlPlaneToken = (string) config('studio.control_plane_token');
+
+        if ($controlPlaneToken !== '' && hash_equals($controlPlaneToken, $providedBearer)) {
+            return $next($request);
+        }
 
         $valid = $username !== ''
             && $password !== ''
