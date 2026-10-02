@@ -76,6 +76,9 @@ func main() {
 	} else {
 		slog.Warn("PostgreSQL is not configured; Auth routes are unavailable")
 	}
+	if graphqlHandler == nil {
+		graphqlHandler = graphqlapi.NewHandler(graphqlapi.HandlerOptions{APIKeys: graphqlapi.APIKeyConfig{Anon: cfg.AnonKey, ServiceRole: cfg.ServiceRoleKey}, JWTSecret: []byte(cfg.JWTSecret), Issuer: cfg.AuthIssuer, Audience: "authenticated"})
+	}
 	if cfg.StorageEndpoint != "" || cfg.StorageAccessKey != "" || cfg.StorageSecretKey != "" {
 		objectStore, storageErr := storage.NewS3Store(storage.S3Config{
 			Endpoint:  cfg.StorageEndpoint,
