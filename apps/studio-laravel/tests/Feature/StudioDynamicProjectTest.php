@@ -6,6 +6,37 @@ use Tests\TestCase;
 
 class StudioDynamicProjectTest extends TestCase
 {
+    public function test_project_settings_never_falls_back_to_localhost_for_the_project_endpoint(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'supadata-registry-');
+        file_put_contents($path, json_encode([
+            'currentProjectId' => 'default',
+            'projects' => [[
+                'id' => 'default',
+                'name' => 'Default Project',
+                'status' => 'ready',
+                'scope' => [],
+            ]],
+        ], JSON_THROW_ON_ERROR));
+        config([
+            'studio.registry_path' => $path,
+            'studio.project_endpoint' => 'http://localhost',
+            'app.url' => 'https://go-alpha.craftmatrix.org',
+        ]);
+
+        try {
+            $this->withBasicAuth('studio', 'password')
+                ->getJson('/api/platform/projects/default/settings')
+                ->assertOk()
+                ->assertJsonPath('app_config.protocol', 'https')
+                ->assertJsonPath('app_config.endpoint', 'go-alpha.craftmatrix.org')
+                ->assertJsonPath('app_config.storage_endpoint', 'go-alpha.craftmatrix.org')
+                ->assertJsonMissing(['app_config.endpoint' => 'localhost']);
+        } finally {
+            @unlink($path);
+        }
+    }
+
     public function test_native_studio_contracts_read_projects_from_the_persisted_registry(): void
     {
         $path = tempnam(sys_get_temp_dir(), 'supadata-registry-');

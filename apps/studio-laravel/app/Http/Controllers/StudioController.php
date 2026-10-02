@@ -672,10 +672,38 @@ class StudioController
 
     private function projectEndpoint(array $record): string
     {
-        $publicUrl = $record['scope']['publicUrl'] ?? null;
-        return is_string($publicUrl) && $publicUrl !== ''
-            ? $publicUrl
-            : (string) config('studio.project_endpoint', 'http://localhost');
+        $configured = [
+            $record['scope']['publicUrl'] ?? null,
+            env('SUPADATA_PUBLIC_URL'),
+            env('SUPABASE_PUBLIC_URL'),
+            config('app.url'),
+            config('studio.project_endpoint'),
+        ];
+
+        foreach ($configured as $endpoint) {
+            if (! is_string($endpoint) || trim($endpoint) === '') {
+                continue;
+            }
+
+            $normalized = rtrim(trim($endpoint), '/');
+            $host = parse_url($normalized, PHP_URL_HOST);
+            if (is_string($host) && ! $this->isLocalEndpointHost($host)) {
+                return $normalized;
+            }
+        }
+
+        // Never present a container-local address as a live project endpoint.
+        return '';
+    }
+
+    private function isLocalEndpointHost(string $host): bool
+    {
+        $normalized = strtolower(trim($host, '[]'));
+
+        return $normalized === 'localhost'
+            || $normalized === '127.0.0.1'
+            || $normalized === '::1'
+            || str_ends_with($normalized, '.localhost');
     }
 
     private function projectEndpointParts(array $record): array
