@@ -146,6 +146,7 @@ class StudioController
     public function project(string $project): JsonResponse
     {
         $record = $this->projectRecord($project);
+        $record['status'] = $this->effectiveProjectStatus($record);
         $restUrl = $this->projectRestUrl($record);
         unset($record['scope']);
 
@@ -628,8 +629,18 @@ class StudioController
 
     private function publicProject(array $project): array
     {
+        $project['status'] = $this->effectiveProjectStatus($project);
         unset($project['scope']);
         return $project;
+    }
+
+    private function effectiveProjectStatus(array $project): string
+    {
+        $connection = $this->databaseConnectionDetails();
+
+        return $connection['host'] !== ''
+            ? 'ACTIVE_HEALTHY'
+            : (string) ($project['status'] ?? 'UNKNOWN');
     }
 
     private function projectRecords(): array
