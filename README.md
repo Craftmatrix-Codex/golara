@@ -9,9 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Craftmatrix-Codex/supabase/tree/canary">Canary</a>
+  <a href="https://github.com/Craftmatrix-Codex/golara/tree/canary">Canary</a>
   ·
-  <a href="https://github.com/Craftmatrix-Codex/supabase/issues">Issues</a>
+  <a href="https://github.com/Craftmatrix-Codex/golara/issues">Issues</a>
   ·
   <a href="DEVELOPERS.md">Developers</a>
 </p>
