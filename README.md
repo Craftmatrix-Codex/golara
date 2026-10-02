@@ -1,101 +1,63 @@
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/8291514/213727234-cda046d6-28c6-491a-b284-b86c5cede25d.png#gh-light-mode-only" alt="Supabase" />
-  <img src="https://user-images.githubusercontent.com/8291514/213727225-56186826-bee8-43b5-9b15-86e839d89393.png#gh-dark-mode-only" alt="Supabase" />
+  <img src="assets/golara-mascot.png" alt="GoLara mascot" width="520" />
 </p>
 
-<h1 align="center">Supabase</h1>
+<h1 align="center">GoLara</h1>
 
 <p align="center">
-  The open-source Postgres development platform — maintained and extended on the <code>canary</code> branch.
+  A fast, project-scoped backend platform with a Supabase-compatible SDK.
 </p>
 
 <p align="center">
   <a href="https://github.com/Craftmatrix-Codex/supabase/tree/canary">Canary</a>
   ·
-  <a href="https://supabase.com/docs">Documentation</a>
-  ·
   <a href="https://github.com/Craftmatrix-Codex/supabase/issues">Issues</a>
+  ·
+  <a href="DEVELOPERS.md">Developers</a>
 </p>
 
-## What is Supabase?
+## What is GoLara?
 
-Supabase is a Postgres development platform. It combines a powerful database with authentication, auto-generated APIs, file storage, realtime features, functions, and a web dashboard.
+GoLara is a developer platform for building applications on PostgreSQL. It provides a Go data plane, a React-based dashboard, project isolation, authentication boundaries, generated APIs, GraphQL, storage, realtime adapters, and a control plane for managing projects.
 
-This repository is a Supabase-compatible platform implementation. The active development environment is **Canary**; Stable is updated only after Canary verification and explicit promotion.
+GoLara is designed to work with the **Supabase-compatible SDK ecosystem**, allowing existing client applications to connect through familiar API conventions while GoLara owns the runtime, routing, deployment, and project infrastructure.
 
-## Platform capabilities
+## Platform
 
-- [x] Hosted PostgreSQL database
+- [x] PostgreSQL-backed projects
+- [x] Project-scoped database routing
 - [x] Authentication and authorization boundaries
-- [x] Project-scoped REST and RPC APIs
-- [x] Native PostgreSQL-backed GraphQL through `pg_graphql`
-- [x] Studio GraphiQL integration
-- [x] File Storage compatibility foundation
+- [x] REST and RPC API foundation
+- [x] GraphQL through native PostgreSQL resolution
+- [x] React/TanStack dashboard
+- [x] Project and database metadata APIs
+- [x] Storage compatibility foundation
 - [x] Realtime compatibility foundation
 - [ ] Complete Storage API parity
 - [ ] Complete Realtime protocol parity
-- [ ] Edge Functions runtime parity
-- [ ] Full upstream provisioning parity
+- [ ] Edge Functions runtime
+- [ ] Full provisioning automation
 
-### API compatibility
+## Supabase-compatible SDK
 
-- [x] REST API foundation
-- [x] RPC routing
-- [x] GraphQL HTTP boundary at `/graphql/v1`
-- [x] GraphQL resolution through PostgreSQL `graphql.resolve(...)`
-- [x] API-key and JWT authorization checks
-- [x] Project-scoped database routing
+GoLara exposes familiar client-facing contracts so applications can use a Supabase-compatible SDK without replacing their data-access patterns.
 
-### Dashboard and Studio
+Supported foundations include:
 
-- [x] Existing React/TanStack Studio interface preserved
-- [x] Laravel control-plane APIs
-- [x] Project metadata and database metadata routes
-- [x] Studio GraphiQL proxy to the Go data plane
-- [x] Secure masked connection details
+- API-key and JWT authentication headers
+- Project-scoped REST requests
+- PostgreSQL RPC calls
+- GraphQL requests at `/graphql/v1`
+- Variables, operation names, and extensions for GraphQL
+- Database roles and JWT claim propagation
+- PostgreSQL Row Level Security enforcement
 
-## Architecture
-
-```text
-Supabase client / browser
-            |
-            v
-      NGINX / HTTPS
-        |       \
-        |        \-- Laravel Studio and control plane
-        v
-   Go compatibility data plane
-        |
-        +-- Auth and project scope
-        +-- REST / RPC / GraphQL
-        +-- Storage and Realtime adapters
-        |
-        v
-     PostgreSQL
-        |
-        \-- pg_graphql / graphql.resolve(...)
-```
-
-The public Canary endpoint is:
-
-```text
-https://go-alpha.craftmatrix.org
-```
-
-The public Stable endpoint is:
-
-```text
-https://go-stable.craftmatrix.org
-```
-
-## GraphQL
-
-GraphQL requests are resolved by the PostgreSQL `pg_graphql` extension. The Go service provides the authenticated, project-scoped HTTP boundary; it does not return a fabricated static schema.
+Example GraphQL request:
 
 ```bash
 curl -X POST "https://go-alpha.craftmatrix.org/graphql/v1" \
   -H "Content-Type: application/json" \
-  -H "apikey: $SUPABASE_ANON_KEY" \
+  -H "apikey: $GOLARA_ANON_KEY" \
   --data '{"query":"{ __typename }"}'
 ```
 
@@ -105,28 +67,54 @@ Expected response:
 {"data":{"__typename":"Query"}}
 ```
 
-The database must provide `pg_graphql`:
+GraphQL is resolved by PostgreSQL through the `pg_graphql` extension. GoLara provides the authenticated and project-scoped HTTP boundary; it does not emulate a static schema.
 
-```sql
-CREATE EXTENSION IF NOT EXISTS pg_graphql;
+## Architecture
+
+```text
+Supabase-compatible SDK / browser
+              |
+              v
+         NGINX / HTTPS
+          |          \
+          |           \-- GoLara dashboard and control plane
+          v
+       Go data plane
+          |
+          +-- Authentication and project scope
+          +-- REST / RPC / GraphQL
+          +-- Storage and Realtime adapters
+          |
+          v
+       PostgreSQL
+          |
+          \-- pg_graphql / graphql.resolve(...)
 ```
 
-See the complete data-plane contract in [`apps/supadata-platform/README.md`](apps/supadata-platform/README.md).
+## Environments
+
+| Environment | Purpose | Endpoint |
+|---|---|---|
+| Canary | Active development and acceptance | `https://go-alpha.craftmatrix.org` |
+| Stable | Promoted production revision | `https://go-stable.craftmatrix.org` |
+
+Canary is the working branch. Stable is changed only after Canary behavior has been tested and explicitly promoted.
 
 ## Repository layout
 
 | Directory | Responsibility |
 |---|---|
 | `apps/supadata-platform` | Go client-facing data plane |
-| `apps/studio` | React/TanStack Studio interface |
-| `apps/studio-laravel` | Laravel Studio and control plane |
+| `apps/studio` | React/TanStack dashboard |
+| `apps/studio-laravel` | Laravel control plane and metadata APIs |
 | `apps/docs` | Documentation application |
 | `docker` | Local and deployment container configuration |
 | `packages` | Shared frontend and platform packages |
+| `assets` | GoLara branding and mascot assets |
 
 ## Development
 
-Requirements depend on the workspace being changed. Go data-plane validation can be run with:
+Run Go data-plane checks from the service directory:
 
 ```bash
 cd apps/supadata-platform
@@ -136,38 +124,31 @@ go vet ./...
 git diff --check
 ```
 
-For frontend, Studio, and local platform setup, start with [`DEVELOPERS.md`](DEVELOPERS.md).
+For frontend and local platform setup, see [`DEVELOPERS.md`](DEVELOPERS.md).
+
+The detailed Go service contract is documented in [`apps/supadata-platform/README.md`](apps/supadata-platform/README.md).
 
 ## Canary workflow
 
-Canary is the integration and acceptance branch:
-
-1. Make the change on `canary`.
+1. Make changes on `canary`.
 2. Run focused tests and repository checks.
 3. Push the commit and deploy Canary.
-4. Verify the exact deployed commit and public route.
-5. Exercise the real authenticated and unauthenticated flows.
+4. Verify the exact deployed commit and public HTTPS routes.
+5. Exercise authenticated and unauthenticated flows.
 6. Promote to Stable only after acceptance passes.
 
-A green build or healthy container alone is not considered feature verification.
+A healthy container or successful build is not, by itself, proof that a feature works. Public behavior must be exercised and read back.
 
-## Documentation
+## Current boundaries
 
-- [Supabase documentation](https://supabase.com/docs)
-- [Developer setup](DEVELOPERS.md)
-- [Go data-plane contract](apps/supadata-platform/README.md)
-- [Database guides](https://supabase.com/docs/guides/database)
-- [Authentication guides](https://supabase.com/docs/guides/auth)
-- [API guides](https://supabase.com/docs/guides/api)
-- [GraphQL guides](https://supabase.com/docs/guides/graphql)
-- [Storage guides](https://supabase.com/docs/guides/storage)
+Implemented foundations are documented above. The following require additional parity work and dedicated acceptance coverage:
 
-## Community and support
-
-- [GitHub Discussions](https://github.com/Craftmatrix-Codex/supabase/discussions) — questions and design discussion
-- [GitHub Issues](https://github.com/Craftmatrix-Codex/supabase/issues) — reproducible bugs
-- [Discord](https://discord.supabase.com) — community discussion
+- complete Storage behavior;
+- complete Realtime websocket behavior;
+- Edge Functions execution;
+- full project provisioning lifecycle;
+- production-scale load, backup, and disaster-recovery validation.
 
 ## License
 
-This project follows the licenses declared by the upstream Supabase components and the individual projects included in this repository. See [`LICENSE`](LICENSE) and each component's license for details.
+See [`LICENSE`](LICENSE) and the license files for the individual components included in this repository.
