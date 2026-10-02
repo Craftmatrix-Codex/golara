@@ -44,11 +44,20 @@ const makeStrings = (poolerUri: string, directUri: string) =>
   }) as any
 
 describe('getSelfHostedPoolerStrings', () => {
-  test('uses POOLER_TENANT_ID and YOUR-PASSWORD placeholders', () => {
+  test('uses the configured pooler tenant ID and redacts the password', () => {
+    const strings = getSelfHostedPoolerStrings('db.example.com', 6543, 'postgres', 'tenant-live')
+    expect(strings.uri).toBe(
+      'postgresql://postgres.tenant-live:[YOUR-PASSWORD]@db.example.com:6543/postgres'
+    )
+    expect(strings.uri).toContain('postgres.tenant-live')
+  })
+
+  test('does not invent a tenant ID when it is not configured', () => {
     const strings = getSelfHostedPoolerStrings('db.example.com', 6543)
     expect(strings.uri).toBe(
-      'postgresql://postgres.[POOLER_TENANT_ID]:[YOUR-PASSWORD]@db.example.com:6543/postgres'
+      'postgresql://postgres:[YOUR-PASSWORD]@db.example.com:6543/postgres'
     )
+    expect(strings.uri).not.toContain('POOLER_TENANT_ID')
   })
 
   test('threads host, port, and database name through every format', () => {
@@ -153,13 +162,13 @@ describe('buildConnectionStringPooler', () => {
       connectionStringsShared: sharedPlatform,
       ipv4Addon: true,
       isHighAvailability: false,
+      poolerTenantId: 'tenant-live',
     })
-
     expect(result.transactionShared).toBe(
-      'postgresql://postgres.[POOLER_TENANT_ID]:[YOUR-PASSWORD]@supabase.example.com:6543/postgres'
+      'postgresql://postgres.tenant-live:[YOUR-PASSWORD]@supabase.example.com:6543/postgres'
     )
     expect(result.sessionShared).toBe(
-      'postgresql://postgres.[POOLER_TENANT_ID]:[YOUR-PASSWORD]@supabase.example.com:5432/postgres'
+      'postgresql://postgres.tenant-live:[YOUR-PASSWORD]@supabase.example.com:5432/postgres'
     )
     expect(result.direct).toBe(
       'postgresql://postgres:[YOUR-PASSWORD]@supabase.example.com:5432/postgres'

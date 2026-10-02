@@ -15,6 +15,7 @@ type ProjectAppConfig = components['schemas']['ProjectSettingsResponse']['app_co
 }
 export type ProjectSettings = components['schemas']['ProjectSettingsResponse'] & {
   app_config?: ProjectAppConfig
+  pooler_tenant_id?: string
 }
 
 export async function getProjectSettings(

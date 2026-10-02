@@ -49,9 +49,10 @@ type ConnectionStrings = {
 export const getSelfHostedPoolerStrings = (
   dbHost: string,
   port: number | string,
-  dbName: string = 'postgres'
+  dbName: string = 'postgres',
+  poolerTenantId: string = ''
 ): ConnectionStrings => {
-  const user = 'postgres.[POOLER_TENANT_ID]'
+  const user = poolerTenantId.trim() !== '' ? `postgres.${poolerTenantId.trim()}` : 'postgres'
   const password = '[YOUR-PASSWORD]'
 
   const uri = `postgresql://${user}:${password}@${dbHost}:${port}/${dbName}`
@@ -258,6 +259,7 @@ export const buildConnectionStringPooler = ({
   connectionStringsDedicated,
   ipv4Addon,
   isHighAvailability,
+  poolerTenantId = '',
 }: {
   deploymentMode: DeploymentMode
   connectionInfo: { db_host: string; db_port: number | string }
@@ -265,12 +267,13 @@ export const buildConnectionStringPooler = ({
   connectionStringsDedicated?: { direct: ConnectionStrings; pooler: ConnectionStrings }
   ipv4Addon: boolean
   isHighAvailability: boolean
+  poolerTenantId?: string
 }): ConnectionStringPooler => {
   if (deploymentMode.isSelfHosted) {
     const dbHost = connectionInfo.db_host
     const dbPort = connectionInfo.db_port || 5432
-    const sessionPool = getSelfHostedPoolerStrings(dbHost, dbPort)
-    const transactionPool = getSelfHostedPoolerStrings(dbHost, 6543)
+    const sessionPool = getSelfHostedPoolerStrings(dbHost, dbPort, 'postgres', poolerTenantId)
+    const transactionPool = getSelfHostedPoolerStrings(dbHost, 6543, 'postgres', poolerTenantId)
     const directConn = getSelfHostedDirectStrings(dbHost, dbPort)
     return {
       transactionShared: transactionPool.uri,

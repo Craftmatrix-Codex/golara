@@ -76,6 +76,7 @@ function useConnectionStringPooler(deploymentMode: DeploymentMode): ConnectionSt
     const emptyState = { db_user: '', db_host: '', db_port: '', db_name: '' }
     return pluckObjectFields(settings || emptyState, DB_FIELDS)
   }, [settings])
+  const poolerTenantId = settings?.pooler_tenant_id?.trim() ?? ''
 
   const poolingConfigurationShared = supavisorConfig?.find((x) => x.database_type === 'PRIMARY')
   const poolingConfigurationDedicated = allowPgBouncerSelection ? pgbouncerConfig : undefined
@@ -123,6 +124,7 @@ function useConnectionStringPooler(deploymentMode: DeploymentMode): ConnectionSt
         connectionStringsDedicated,
         ipv4Addon: !!ipv4Addon,
         isHighAvailability,
+        poolerTenantId,
       }),
     [
       deploymentMode,
@@ -131,6 +133,7 @@ function useConnectionStringPooler(deploymentMode: DeploymentMode): ConnectionSt
       connectionStringsDedicated,
       ipv4Addon,
       isHighAvailability,
+      poolerTenantId,
     ]
   )
 }

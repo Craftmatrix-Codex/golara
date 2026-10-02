@@ -519,6 +519,7 @@ class StudioController
             'name' => $record['name'],
             'ref' => $project,
             'region' => 'configured',
+            'pooler_tenant_id' => $this->poolerTenantId(),
             'service_api_keys' => [
                 ['api_key' => '', 'name' => 'anon key', 'tags' => 'anon'],
                 ['api_key' => '', 'name' => 'service_role key', 'tags' => 'service_role'],
@@ -621,6 +622,13 @@ class StudioController
     private function projectRestUrl(array $record): string
     {
         return rtrim($this->projectEndpoint($record), '/') . '/rest/v1';
+    }
+
+    private function poolerTenantId(): string
+    {
+        $tenantId = (string) (env('SUPADATA_POOLER_TENANT_ID') ?: env('POOLER_TENANT_ID'));
+
+        return trim($tenantId);
     }
 
     private function databaseConnectionDetails(): array
