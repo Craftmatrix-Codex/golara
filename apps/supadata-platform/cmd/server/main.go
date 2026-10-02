@@ -43,6 +43,18 @@ func main() {
 		slog.Error("read project registry", "error", err)
 		os.Exit(1)
 	}
+	if len(projects) == 0 {
+		if _, err := store.CreateProject(context.Background(), "Default Project", "default"); err != nil {
+			slog.Error("bootstrap default project", "error", err)
+			os.Exit(1)
+		}
+		projects, err = store.ListProjects(context.Background())
+		if err != nil {
+			slog.Error("read bootstrapped project registry", "error", err)
+			os.Exit(1)
+		}
+		slog.Info("bootstrapped default project", "project", "default")
+	}
 	databaseConnections, err := platformruntime.OpenProjectDatabases(context.Background(), cfg, projects)
 	if err != nil {
 		slog.Error("initialize project databases", "error", err)
