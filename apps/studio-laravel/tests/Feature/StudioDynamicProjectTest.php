@@ -15,7 +15,7 @@ class StudioDynamicProjectTest extends TestCase
                 'id' => 'default',
                 'name' => 'Default Project',
                 'status' => 'ready',
-                'scope' => [],
+                'scope' => ['publicUrl' => 'https://default.go-alpha.craftmatrix.org'],
             ]],
         ], JSON_THROW_ON_ERROR));
         config([

@@ -769,13 +769,22 @@ class StudioController
 
     private function projectEndpoint(array $record): string
     {
-        $configured = [
-            $record['scope']['publicUrl'] ?? null,
-            env('SUPADATA_PUBLIC_URL'),
-            env('SUPABASE_PUBLIC_URL'),
-            config('app.url'),
-            config('studio.project_endpoint'),
-        ];
+        $recordPublicUrl = $record['scope']['publicUrl'] ?? null;
+        $configured = ($record['ref'] ?? null) === 'default'
+            ? [
+                env('SUPADATA_PUBLIC_URL'),
+                env('SUPABASE_PUBLIC_URL'),
+                config('app.url'),
+                config('studio.project_endpoint'),
+                $recordPublicUrl,
+            ]
+            : [
+                $recordPublicUrl,
+                env('SUPADATA_PUBLIC_URL'),
+                env('SUPABASE_PUBLIC_URL'),
+                config('app.url'),
+                config('studio.project_endpoint'),
+            ];
 
         foreach ($configured as $endpoint) {
             if (! is_string($endpoint) || trim($endpoint) === '') {
