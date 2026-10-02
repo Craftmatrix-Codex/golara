@@ -23,6 +23,7 @@ Route::middleware('studio.auth')
     Route::get('/api/platform/projects/current', [StudioController::class, 'currentProject']);
     Route::get('/api/platform/projects/{project}', [StudioController::class, 'project']);
     Route::get('/api/ai/sql/check-api-key', [StudioController::class, 'aiSqlCheckApiKey']);
+    Route::post('/api/platform/projects/{project}/api/graphql', [StudioController::class, 'graphql']);
     Route::match(['get', 'head'], '/api/platform/projects/{project}/api/rest', [StudioController::class, 'apiRest']);
     Route::get('/api/platform/projects/{project}/config/secrets/update-status', [StudioController::class, 'jwtSecretUpdateStatus']);
     Route::match(['get', 'post'], '/api/platform/projects/{project}/config/postgrest', [StudioController::class, 'postgrestConfig']);

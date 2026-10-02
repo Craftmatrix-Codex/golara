@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Http;
 use PDO;
 use PDOException;
 use App\Services\PlatformTelemetry;
@@ -262,6 +263,26 @@ class StudioController
         $this->projectRecord($project);
 
         return response()->json([]);
+    }
+
+    public function graphql(Request $request, string $project): Response
+    {
+        $this->assertProject($project);
+        $endpoint = rtrim((string) env('SUPABASE_URL', env('SUPADATA_PUBLIC_URL', '')), '/') . '/graphql/v1';
+        abort_unless($endpoint !== '/graphql/v1', 503, 'GraphQL endpoint is not configured');
+
+        $headers = [
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
+            'apikey' => (string) env('SUPABASE_ANON_KEY', env('ANON_KEY', '')),
+        ];
+        foreach (['Authorization', 'x-graphql-authorization'] as $header) {
+            if ($request->hasHeader($header)) $headers[$header] = $request->header($header);
+        }
+
+        $upstream = Http::timeout(30)->withHeaders($headers)->post($endpoint, $request->json()->all());
+        return response($upstream->body(), $upstream->status())
+            ->header('Content-Type', $upstream->header('Content-Type', 'application/json'));
     }
 
     public function pgMetaQuery(Request $request, string $project): JsonResponse
