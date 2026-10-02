@@ -1,8 +1,20 @@
-import { Check, KeyRound } from 'lucide-react'
+import { Check, Eye, EyeOff, KeyRound, ShieldCheck } from 'lucide-react'
+import { useParams } from 'common'
 import { useMemo, useState } from 'react'
-import { cn } from 'ui'
+import { toast } from 'sonner'
+import {
+  Button,
+  cn,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogSection,
+  DialogTitle,
+} from 'ui'
 import { CodeBlock } from 'ui-patterns/CodeBlock'
 import { GenericSkeletonLoader } from 'ui-patterns/ShimmeringLoader'
+import { Input } from 'ui-patterns/DataInputs/Input'
 
 import {
   CONNECTION_SOURCE_LOAD_BALANCER,
@@ -31,6 +43,7 @@ import { ResetDbPasswordDialog } from '@/components/interfaces/Settings/Database
 import { InlineLink } from '@/components/ui/InlineLink'
 import { useCheckEntitlements } from '@/hooks/misc/useCheckEntitlements'
 import { useIsHighAvailability } from '@/hooks/misc/useSelectedProject'
+import { fetchPost } from '@/data/fetchers'
 import { DOCS_URL } from '@/lib/constants'
 import { useTrack } from '@/lib/telemetry/track'
 
@@ -48,10 +61,15 @@ const CONNECTION_METHOD_TO_TELEMETRY: Record<
  * Uses state to determine which connection string to show.
  */
 function DirectConnectionContent({ state, deploymentMode }: StepContentProps) {
+  const { ref: projectRef } = useParams()
   const track = useTrack()
   const { hasAccess: hasDedicatedPooler } = useCheckEntitlements('dedicated_pooler')
   const isHighAvailability = useIsHighAvailability()
   const [temporaryDatabasePassword, setTemporaryDatabasePassword] = useState('')
+  const [revealedDatabasePassword, setRevealedDatabasePassword] = useState('')
+  const [isPasswordValidatorOpen, setIsPasswordValidatorOpen] = useState(false)
+  const [validator, setValidator] = useState('')
+  const [isValidatingPassword, setIsValidatingPassword] = useState(false)
 
   const connectionSource = state.connectionSource
   const isLoadBalancerSelected =
@@ -99,14 +117,39 @@ function DirectConnectionContent({ state, deploymentMode }: StepContentProps) {
   }, [connectionType, connectionParams, safeConnectionString])
 
   const connectionString = useMemo(() => {
-    if (!temporaryDatabasePassword) return redactedConnectionString
+    const password = revealedDatabasePassword || temporaryDatabasePassword
+    if (!password) return redactedConnectionString
 
     if (connectionType === 'psql') {
       return redactedConnectionString
     }
 
-    return buildConnectionStringWithPassword(redactedConnectionString, temporaryDatabasePassword)
-  }, [connectionType, redactedConnectionString, temporaryDatabasePassword])
+    return buildConnectionStringWithPassword(redactedConnectionString, password)
+  }, [connectionType, redactedConnectionString, revealedDatabasePassword, temporaryDatabasePassword])
+
+  const validateAndRevealPassword = async () => {
+    if (!projectRef || validator === '') return
+
+    setIsValidatingPassword(true)
+    const response = await fetchPost<{ password: string }>(
+      `/api/platform/projects/${projectRef}/connection-password`,
+      { validator }
+    )
+    setIsValidatingPassword(false)
+
+    if ('error' in response && response.error) {
+      const error = response.error as { message?: string }
+      toast.error(error.message || 'Password validation failed')
+      return
+    }
+
+    if ('password' in response && typeof response.password === 'string') {
+      setRevealedDatabasePassword(response.password)
+      setValidator('')
+      setIsPasswordValidatorOpen(false)
+      toast.success('Database password revealed until this Connect sheet closes')
+    }
+  }
 
   const trackCopy = () => {
     const typeConfig = DATABASE_CONNECTION_TYPES.find((t) => t.id === connectionType)
@@ -136,14 +179,15 @@ function DirectConnectionContent({ state, deploymentMode }: StepContentProps) {
         ? 'Shared pooler'
         : null
 
-  const showPasswordPlaceholder = connectionString.includes(PASSWORD_PLACEHOLDER)
+  const showPasswordPlaceholder = redactedConnectionString.includes(PASSWORD_PLACEHOLDER)
+  const showPasswordToggle = showPasswordPlaceholder || Boolean(revealedDatabasePassword)
   const showSelfHostedDirectNotice = deploymentMode.isSelfHosted && connectionMethod === 'direct'
   const showPoolerTitle = deploymentMode.isPlatform && !!poolerBadge && !isHighAvailability
   const titleBadge = isLoadBalancerSelected ? 'Read-only' : poolerBadge
   const showTitleBadge = isLoadBalancerSelected || showPoolerTitle
   const showResetInTitle =
     deploymentMode.isPlatform && showPasswordPlaceholder && !temporaryDatabasePassword
-  const showStringTitleRow = showTitleBadge || showResetInTitle
+  const showStringTitleRow = showTitleBadge || showResetInTitle || showPasswordToggle
 
   return (
     <div className="flex flex-col gap-3">
@@ -161,6 +205,23 @@ function DirectConnectionContent({ state, deploymentMode }: StepContentProps) {
                 triggerIcon={<KeyRound />}
                 onPasswordReset={setTemporaryDatabasePassword}
               />
+            )}
+            {showPasswordToggle && (
+              <Button
+                type="button"
+                size="tiny"
+                variant="default"
+                onClick={() => {
+                  if (revealedDatabasePassword) {
+                    setRevealedDatabasePassword('')
+                  } else {
+                    setIsPasswordValidatorOpen(true)
+                  }
+                }}
+              >
+                {revealedDatabasePassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                {revealedDatabasePassword ? 'Hide password' : 'Show password'}
+              </Button>
             )}
           </div>
         )}
@@ -183,6 +244,51 @@ function DirectConnectionContent({ state, deploymentMode }: StepContentProps) {
           </div>
         )}
       </div>
+      <Dialog
+        open={isPasswordValidatorOpen}
+        onOpenChange={(open) => {
+          setIsPasswordValidatorOpen(open)
+          if (!open) setValidator('')
+        }}
+      >
+        <DialogContent size="small">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck size={18} /> Validate to show password
+            </DialogTitle>
+          </DialogHeader>
+          <DialogSection className="space-y-3">
+            <p className="text-sm text-foreground-light">
+              Enter the current Studio password. The database password is returned only for this
+              authenticated request and is not persisted.
+            </p>
+            <Input
+              type="password"
+              value={validator}
+              autoComplete="current-password"
+              placeholder="Studio password"
+              onChange={(event) => setValidator(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') void validateAndRevealPassword()
+              }}
+            />
+          </DialogSection>
+          <DialogFooter>
+            <Button type="button" variant="default" onClick={() => setIsPasswordValidatorOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              loading={isValidatingPassword}
+              disabled={validator === '' || isValidatingPassword}
+              onClick={() => void validateAndRevealPassword()}
+            >
+              Validate and show
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {showPasswordPlaceholder && <PasswordEncodingNote />}
       {/* Persistent live region so screen readers announce the read-only state
           when the load balancer is selected */}

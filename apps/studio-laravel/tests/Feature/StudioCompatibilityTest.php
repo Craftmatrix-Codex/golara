@@ -120,6 +120,27 @@ class StudioCompatibilityTest extends TestCase
             ]);
     }
 
+    public function test_database_password_reveal_requires_the_studio_validator(): void
+    {
+        config()->set('studio.auth_password', 'validator-secret');
+        config()->set('database.connections.pgsql.url', 'postgresql://runtime:database-secret@db.example.test:5432/postgres');
+
+        $this->withBasicAuth('studio', 'validator-secret')
+            ->postJson('/api/platform/projects/default/connection-password', ['validator' => 'validator-secret'])
+            ->assertOk()
+            ->assertJsonPath('password', 'database-secret')
+            ->assertHeader('Cache-Control', 'no-store, private');
+
+        $this->withBasicAuth('studio', 'validator-secret')
+            ->postJson('/api/platform/projects/default/connection-password', ['validator' => 'wrong-secret'])
+            ->assertForbidden()
+            ->assertJsonMissing(['password' => 'database-secret']);
+
+        $this->withBasicAuth('studio', 'wrong-validator')
+            ->postJson('/api/platform/projects/default/connection-password', ['validator' => 'validator-secret'])
+            ->assertUnauthorized();
+    }
+
     public function test_utc_time_endpoint_returns_native_json(): void
     {
         $this->auth()->getJson('/api/get-utc-time')

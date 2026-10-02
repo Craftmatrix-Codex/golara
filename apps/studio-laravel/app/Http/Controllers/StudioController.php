@@ -529,6 +529,29 @@ class StudioController
         ]);
     }
 
+    public function revealDatabasePassword(Request $request, string $project): JsonResponse
+    {
+        $this->projectRecord($project);
+        $validator = $request->input('validator');
+        $configuredValidator = (string) config('studio.auth_password');
+
+        if (! is_string($validator)
+            || $configuredValidator === ''
+            || ! hash_equals($configuredValidator, $validator)) {
+            return response()->json(['message' => 'Validation failed'], 403);
+        }
+
+        $password = $this->databasePassword();
+        if ($password === '') {
+            return response()->json(['message' => 'Database password is not configured for display'], 409);
+        }
+
+        return response()
+            ->json(['password' => $password])
+            ->header('Cache-Control', 'no-store, private')
+            ->header('Pragma', 'no-cache');
+    }
+
     public function client(Request $request): Response
     {
         $shell = config('studio.client_shell');
@@ -622,6 +645,21 @@ class StudioController
     private function projectRestUrl(array $record): string
     {
         return rtrim($this->projectEndpoint($record), '/') . '/rest/v1';
+    }
+
+    private function databasePassword(): string
+    {
+        $configured = (string) (env('SUPADATA_DATABASE_PASSWORD') ?: env('DB_PASSWORD') ?: env('POSTGRES_PASSWORD'));
+        if ($configured !== '') {
+            return $configured;
+        }
+
+        $url = (string) (env('DATABASE_URL') ?: env('SUPADATA_DATABASE_URL') ?: config('database.connections.pgsql.url', ''));
+        $parsed = $url !== '' ? parse_url($url) : false;
+
+        return is_array($parsed) && is_string($parsed['pass'] ?? null)
+            ? rawurldecode($parsed['pass'])
+            : '';
     }
 
     private function poolerTenantId(): string

@@ -29,6 +29,7 @@ Route::middleware('studio.auth')
     Route::match(['get', 'post'], '/api/platform/projects/{project}/analytics/endpoints/{name}', [StudioController::class, 'analytics']);
     Route::get('/api/platform/projects/{project}/settings', [StudioController::class, 'settings']);
     Route::get('/api/platform/projects/{project}/databases', [StudioController::class, 'databases']);
+    Route::post('/api/platform/projects/{project}/connection-password', [StudioController::class, 'revealDatabasePassword']);
     Route::post('/api/platform/projects/{project}/api-keys/temporary', [StudioController::class, 'temporaryApiKey']);
     Route::get('/api/v1/projects/{project}/api-keys', [StudioController::class, 'apiKeys']);
     Route::match(['get', 'post'], '/api/platform/projects/{project}/run-lints', [StudioController::class, 'runLints']);
