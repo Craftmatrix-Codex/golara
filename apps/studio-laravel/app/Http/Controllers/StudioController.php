@@ -543,7 +543,9 @@ class StudioController
 
         $password = $this->databasePassword();
         if ($password === '') {
-            return response()->json(['message' => 'Database password is not configured for display'], 409);
+            return response()->json([
+                'message' => 'Database password is unavailable. Configure SUPADATA_DATABASE_PASSWORD in Coolify and redeploy.',
+            ], 409);
         }
 
         return response()
