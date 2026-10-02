@@ -96,7 +96,7 @@ Supabase-compatible SDK / browser
 | Environment | Purpose | Endpoint |
 |---|---|---|
 | Canary | Active development and acceptance | `https://go-alpha.craftmatrix.org` |
-| Stable | Promoted production revision | `https://go-stable.craftmatrix.org` |
+| Stable | Promoted production revision | `https://golara.craftmatrix.org` |
 
 Canary is the working branch. Stable is changed only after Canary behavior has been tested and explicitly promoted.
 

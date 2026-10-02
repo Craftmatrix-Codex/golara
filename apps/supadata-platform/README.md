@@ -31,7 +31,7 @@ Browser / Supabase client
 The public application is deployed separately for each branch:
 
 - **Canary**: `https://go-alpha.craftmatrix.org`
-- **Stable**: `https://go-stable.craftmatrix.org`
+- **Stable**: `https://golara.craftmatrix.org`
 
 Canary is the validation environment. Stable is updated only through an explicit promotion.
 
