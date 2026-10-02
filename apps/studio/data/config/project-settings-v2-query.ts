@@ -5,6 +5,7 @@ import { configKeys } from './keys'
 import type { components } from '@/data/api'
 import { get, handleError } from '@/data/fetchers'
 import { useAsyncCheckPermissions } from '@/hooks/misc/useCheckPermissions'
+import { IS_PLATFORM } from '@/lib/constants'
 import type { ResponseError, UseCustomQueryOptions } from '@/types'
 
 export type ProjectSettingsVariables = { projectRef?: string }
@@ -57,6 +58,7 @@ export const useProjectSettingsV2Query = <TData = ProjectSettingsData>(
     queryFn: ({ signal }) => getProjectSettings({ projectRef }, signal),
     enabled: enabled && typeof projectRef !== 'undefined',
     refetchInterval: (query) => {
+      if (!IS_PLATFORM) return 0
       const data = query.state.data
       const apiKeys = data?.service_api_keys ?? []
       const interval =
