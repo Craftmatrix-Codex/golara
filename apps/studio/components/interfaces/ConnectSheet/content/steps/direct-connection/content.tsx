@@ -69,6 +69,7 @@ function DirectConnectionContent({ state, deploymentMode }: StepContentProps) {
   const [revealedDatabasePassword, setRevealedDatabasePassword] = useState('')
   const [isPasswordValidatorOpen, setIsPasswordValidatorOpen] = useState(false)
   const [validator, setValidator] = useState('')
+  const [passwordValidationError, setPasswordValidationError] = useState('')
   const [isValidatingPassword, setIsValidatingPassword] = useState(false)
 
   const connectionSource = state.connectionSource
@@ -130,24 +131,31 @@ function DirectConnectionContent({ state, deploymentMode }: StepContentProps) {
   const validateAndRevealPassword = async () => {
     if (!projectRef || validator === '') return
 
+    setPasswordValidationError('')
     setIsValidatingPassword(true)
-    const response = await fetchPost<{ password: string }>(
-      `/api/platform/projects/${projectRef}/connection-password`,
-      { validator }
-    )
-    setIsValidatingPassword(false)
+    try {
+      const response = await fetchPost<{ password: string }>(
+        `/api/platform/projects/${projectRef}/connection-password`,
+        { validator }
+      )
 
-    if ('error' in response && response.error) {
-      const error = response.error as { message?: string }
-      toast.error(error.message || 'Password validation failed')
-      return
-    }
+      if ('error' in response && response.error) {
+        const error = response.error as { message?: string }
+        setPasswordValidationError(error.message || 'Password validation failed')
+        return
+      }
 
-    if ('password' in response && typeof response.password === 'string') {
-      setRevealedDatabasePassword(response.password)
-      setValidator('')
-      setIsPasswordValidatorOpen(false)
-      toast.success('Database password revealed until this Connect sheet closes')
+      if ('password' in response && typeof response.password === 'string') {
+        setRevealedDatabasePassword(response.password)
+        setValidator('')
+        setPasswordValidationError('')
+        setIsPasswordValidatorOpen(false)
+        toast.success('Database password revealed until this Connect sheet closes')
+      }
+    } catch {
+      setPasswordValidationError('Unable to validate the password. Try again.')
+    } finally {
+      setIsValidatingPassword(false)
     }
   }
 
@@ -248,7 +256,10 @@ function DirectConnectionContent({ state, deploymentMode }: StepContentProps) {
         open={isPasswordValidatorOpen}
         onOpenChange={(open) => {
           setIsPasswordValidatorOpen(open)
-          if (!open) setValidator('')
+          if (!open) {
+            setValidator('')
+            setPasswordValidationError('')
+          }
         }}
       >
         <DialogContent size="small">
@@ -267,11 +278,23 @@ function DirectConnectionContent({ state, deploymentMode }: StepContentProps) {
               value={validator}
               autoComplete="current-password"
               placeholder="Studio password"
-              onChange={(event) => setValidator(event.target.value)}
+              aria-invalid={passwordValidationError ? true : undefined}
+              onChange={(event) => {
+                setValidator(event.target.value)
+                if (passwordValidationError) setPasswordValidationError('')
+              }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') void validateAndRevealPassword()
               }}
             />
+            {passwordValidationError && (
+              <div
+                role="alert"
+                className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
+                {passwordValidationError}
+              </div>
+            )}
           </DialogSection>
           <DialogFooter>
             <Button type="button" variant="default" onClick={() => setIsPasswordValidatorOpen(false)}>
