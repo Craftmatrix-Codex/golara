@@ -65,7 +65,6 @@ import { StudioCommandProvider as CommandProvider } from '@/components/interface
 import { FeaturePreviewContextProvider } from '@/components/interfaces/App/FeaturePreview/FeaturePreviewContext'
 import { FeaturePreviewModal } from '@/components/interfaces/App/FeaturePreview/FeaturePreviewModal'
 import { IndirectTaxDeclarationModal } from '@/components/interfaces/App/IndirectTaxDeclarationModal'
-import { MonacoThemeProvider } from '@/components/interfaces/App/MonacoThemeProvider'
 import { RouteValidationWrapper } from '@/components/interfaces/App/RouteValidationWrapper'
 import { ShellFallback } from '@/components/interfaces/App/ShellFallback'
 import { MainScrollContainerProvider } from '@/components/layouts/MainScrollContainerContext'
@@ -400,7 +399,6 @@ function RootComponent() {
                               </BannerStackProvider>
                               <Toaster />
                               <ToastErrorTracker />
-                              <MonacoThemeProvider />
                             </CommandProvider>
                           </AiAssistantStateContextProvider>
                           <DevToolbar extraTabs={devToolbarExtraTabs} />
