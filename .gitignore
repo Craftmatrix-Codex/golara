@@ -9,6 +9,7 @@ tmp
 coverage
 allure-results
 allure-report
+artifacts/
 .nyc_output
 *.log
 

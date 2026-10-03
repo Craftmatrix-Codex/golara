@@ -38,9 +38,9 @@ describe('SupadataProjectSelector credentials', () => {
 
     customRender(<SupadataProjectSelector currentId="demo" currentName="Demo" />)
     await waitFor(() =>
-      expect(screen.getByRole('combobox', { name: 'Select Supadata project' })).toBeEnabled()
+      expect(screen.getByRole('combobox', { name: 'Select Golara project' })).toBeEnabled()
     )
-    await user.click(screen.getByRole('combobox', { name: 'Select Supadata project' }))
+    await user.click(screen.getByRole('combobox', { name: 'Select Golara project' }))
     await user.click(screen.getByRole('option', { name: 'Credentials' }))
 
     expect(await screen.findByText('127.0.0.1:5433')).toBeInTheDocument()

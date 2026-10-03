@@ -29,7 +29,7 @@ const AccountLayout = ({ children, title }: PropsWithChildren<AccountLayoutProps
   const showSecuritySettings = useIsFeatureEnabled('account:show_security_settings')
 
   const { appTitle } = useCustomContent(['app:title'])
-  const brandTitle = appTitle || 'Supabase'
+  const brandTitle = appTitle || 'Golara'
   const surfaceLabel = IS_PLATFORM ? 'Account' : 'Preferences'
 
   const backToDashboardURL =
@@ -128,7 +128,7 @@ const AccountLayout = ({ children, title }: PropsWithChildren<AccountLayoutProps
     <>
       <Head>
         <title>{pageTitle}</title>
-        <meta name="description" content="Supabase Studio" />
+        <meta name="description" content="Golara Studio" />
       </Head>
       <div className={cn('flex flex-col w-screen h-[calc(100vh-48px)]')}>
         <WithSidebar backToDashboardURL={backToDashboardURL} sections={sections}>

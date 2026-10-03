@@ -41,7 +41,7 @@ export const RealtimeLayout = ({ title, children }: PropsWithChildren<RealtimeLa
       <>
         <Head>
           <title>{title}</title>
-          <meta name="description" content="Supabase Studio" />
+          <meta name="description" content="Golara Studio" />
         </Head>
         <main
           id="panel-project-content"

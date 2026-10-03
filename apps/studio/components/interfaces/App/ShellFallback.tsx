@@ -62,7 +62,7 @@ export function ShellFallback() {
             <style>#studio-shell-loader{display:none}</style>
             <div data-nosnippet class="fixed inset-0 flex items-center justify-center p-4">
               <p class="text-sm text-foreground-light text-center">
-                Supabase Studio requires JavaScript. Enable JavaScript in your browser settings and reload the page.
+                Golara Studio requires JavaScript. Enable JavaScript in your browser settings and reload the page.
               </p>
             </div>
           `,

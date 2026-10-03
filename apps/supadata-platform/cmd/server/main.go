@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/database"
 	graphqlapi "github.com/renzaspiras/supabase/apps/supadata-platform/internal/graphql"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/httpapi"
+	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/project"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/provisioning"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/realtime"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/registry"
@@ -24,6 +26,23 @@ import (
 	platformruntime "github.com/renzaspiras/supabase/apps/supadata-platform/internal/runtime"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/storage"
 )
+
+type bucketProvisioner interface {
+	EnsureBucket(context.Context, string) error
+}
+
+func ensureProjectBuckets(ctx context.Context, provisioner bucketProvisioner, projects []project.Project) error {
+	for _, configuredProject := range projects {
+		bucket := configuredProject.Scope.Storage.Bucket
+		if bucket == "" {
+			return fmt.Errorf("project %s has no configured storage bucket", configuredProject.ID)
+		}
+		if err := provisioner.EnsureBucket(ctx, bucket); err != nil {
+			return fmt.Errorf("project %s storage bucket %s: %w", configuredProject.ID, bucket, err)
+		}
+	}
+	return nil
+}
 
 func main() {
 	cfg := config.Load()
@@ -71,6 +90,10 @@ func main() {
 	var realtimeHandler http.Handler
 	var objectStore *storage.S3Store
 	if databaseConnections != nil && databaseConnections.Primary != nil {
+		if schemaErr := auth.EnsurePostgresSchema(context.Background(), databaseConnections.Primary, "auth"); schemaErr != nil {
+			slog.Error("reconcile Auth schema", "error", schemaErr)
+			os.Exit(1)
+		}
 		repository, repositoryErr := auth.NewPostgresRepository(databaseConnections.Primary, "auth")
 		if repositoryErr != nil {
 			slog.Error("initialize Auth repository", "error", repositoryErr)
@@ -101,6 +124,10 @@ func main() {
 		})
 		if storageErr != nil {
 			slog.Error("initialize object storage", "error", storageErr)
+			os.Exit(1)
+		}
+		if storageErr := ensureProjectBuckets(context.Background(), objectStore, projects); storageErr != nil {
+			slog.Error("initialize project storage", "error", storageErr)
 			os.Exit(1)
 		}
 		storageHandler = storage.NewHandler(storage.HandlerOptions{

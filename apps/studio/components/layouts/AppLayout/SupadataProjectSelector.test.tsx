@@ -32,7 +32,7 @@ describe('SupadataProjectSelector', () => {
     render(<SupadataProjectSelector currentId="default" currentName="Default Project" />)
 
     await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/platform/projects'))
-    await user.click(screen.getByRole('combobox', { name: 'Select Supadata project' }))
+    await user.click(screen.getByRole('combobox', { name: 'Select Golara project' }))
     await user.click(screen.getByText('New project', { exact: true }))
     await user.type(screen.getByLabelText('Project name'), 'Video Project Demo')
 

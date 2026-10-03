@@ -78,7 +78,7 @@ export function SupadataProjectSelector({
     setIsLoading(true)
     try {
       const response = await fetch(`${proxyPath}/projects`)
-      if (!response.ok) throw new Error('Failed to load Supadata projects')
+      if (!response.ok) throw new Error('Failed to load Golara projects')
       const payload = (await response.json()) as { projects: SupadataProject[] } | SupadataProject[]
       const nextProjects = Array.isArray(payload) ? payload : payload.projects
       setProjects(nextProjects)
@@ -151,7 +151,7 @@ export function SupadataProjectSelector({
           method: 'POST',
         }
       )
-      if (!response.ok) throw new Error('Failed to switch Supadata project')
+      if (!response.ok) throw new Error('Failed to switch Golara project')
       setSelectedId(projectId)
       setOpen(false)
       await router.push(`/project/${projectId}`)
@@ -175,7 +175,7 @@ export function SupadataProjectSelector({
       })
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { error?: string } | null
-        throw new Error(payload?.error ?? 'Failed to create Supadata project')
+        throw new Error(payload?.error ?? 'Failed to create Golara project')
       }
       const payload = (await response.json()) as { project: SupadataProject }
       setName('')
@@ -204,10 +204,10 @@ export function SupadataProjectSelector({
             size="tiny"
             role="combobox"
             aria-expanded={open}
-            aria-label="Select Supadata project"
+            aria-label="Select Golara project"
             disabled={isLoading || isSelecting || isSubmitting}
             className="h-8 min-w-[170px] max-w-[260px] justify-between gap-3 px-2.5 text-sm font-normal"
-            title={error ?? 'Select Supadata project'}
+            title={error ?? 'Select Golara project'}
           >
             <span className="flex min-w-0 flex-1 items-center gap-2">
               <Box size={14} strokeWidth={1.5} className="shrink-0 text-foreground-lighter" />
@@ -219,7 +219,7 @@ export function SupadataProjectSelector({
         <PopoverContent className="w-[280px] p-0" align="start" sideOffset={6}>
           {isCreateFormOpen ? (
             <form onSubmit={createProject} className="space-y-3 p-3">
-              <div className="text-sm font-medium">New Supadata project</div>
+              <div className="text-sm font-medium">New Golara project</div>
               <input
                 aria-label="Project name"
                 autoFocus
@@ -260,7 +260,7 @@ export function SupadataProjectSelector({
               <CommandInput placeholder="Find project..." />
               <CommandList>
                 <CommandEmpty>No projects found.</CommandEmpty>
-                <CommandGroup heading="Supadata projects">
+                <CommandGroup heading="Golara projects">
                   {sortedProjects.map((project) => (
                     <CommandItem
                       key={project.id}

@@ -38,8 +38,8 @@ export const HomeIcon = ({ className }: { className?: string }) => {
           tabIndex={0}
         >
           <img
-            alt="Supabase"
-            src={`${router.basePath}/img/supabase-logo.svg`}
+            alt="Golara"
+            src={`${router.basePath}/img/golara-logo.svg`}
             className={largeLogo ? 'h-[20px]' : 'h-[18px]'}
           />
           <span className="sr-only">Back to organization home</span>

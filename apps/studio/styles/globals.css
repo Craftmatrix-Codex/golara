@@ -138,6 +138,12 @@
 }
 
 :root {
+  --golara-red: 4 100% 56%;
+  --golara-cyan: 192 100% 42%;
+  --brand-link: var(--golara-cyan);
+  --brand-default: var(--golara-red);
+  --brand-600: 4 100% 68%;
+  --brand-500: 4 82% 40%;
   --chart-1: hsl(var(--brand-default));
   --chart-2: 173 58% 39%;
   --chart-3: 197 37% 24%;
@@ -161,6 +167,10 @@
 
 [data-theme='dark'],
 .dark {
+  --brand-link: var(--golara-cyan);
+  --brand-default: var(--golara-red);
+  --brand-600: 4 100% 70%;
+  --brand-500: 4 82% 38%;
   --chart-1: hsl(var(--brand-default));
   --chart-2: 160 60% 45%;
   --chart-3: 30 80% 55%;

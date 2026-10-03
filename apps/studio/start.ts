@@ -46,7 +46,7 @@ const studioAuthMiddleware = createMiddleware({ type: 'request' }).server(({ req
   if (!valid) {
     return new Response('Authentication required', {
       status: 401,
-      headers: { 'www-authenticate': 'Basic realm="Supadata Studio", charset="UTF-8"' },
+      headers: { 'www-authenticate': 'Basic realm="Golara Studio", charset="UTF-8"' },
     })
   }
   return next()
