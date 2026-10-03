@@ -355,7 +355,8 @@ class StudioController
     {
         foreach ([
             'CREATE SCHEMA IF NOT EXISTS auth',
-            "CREATE TABLE IF NOT EXISTS auth.users (id uuid primary key, email text, banned_until timestamptz, created_at timestamptz not null default now(), confirmed_at timestamptz, email_confirmed_at timestamptz, confirmation_sent_at timestamptz, is_anonymous boolean not null default false, is_sso_user boolean not null default false, invited_at timestamptz, last_sign_in_at timestamptz, phone text, phone_confirmed_at timestamptz, raw_app_meta_data jsonb not null default '{}'::jsonb, raw_user_meta_data jsonb not null default '{}'::jsonb, updated_at timestamptz not null default now())",
+            "CREATE TABLE IF NOT EXISTS auth.users (id uuid primary key, instance_id uuid not null default '00000000-0000-0000-0000-000000000000'::uuid, email text, banned_until timestamptz, created_at timestamptz not null default now(), confirmed_at timestamptz, email_confirmed_at timestamptz, confirmation_sent_at timestamptz, is_anonymous boolean not null default false, is_sso_user boolean not null default false, invited_at timestamptz, last_sign_in_at timestamptz, phone text, phone_confirmed_at timestamptz, raw_app_meta_data jsonb not null default '{}'::jsonb, raw_user_meta_data jsonb not null default '{}'::jsonb, updated_at timestamptz not null default now())",
+            "ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS instance_id uuid NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'::uuid",
             "ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS email_confirmed_at timestamptz",
             "ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS phone_confirmed_at timestamptz",
             "ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS confirmed_at timestamptz",

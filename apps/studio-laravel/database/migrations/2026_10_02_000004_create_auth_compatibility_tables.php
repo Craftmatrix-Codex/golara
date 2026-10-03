@@ -16,6 +16,7 @@ return new class extends Migration
         if (! Schema::hasTable('auth.users')) {
             Schema::create('auth.users', function (Blueprint $table): void {
                 $table->uuid('id')->primary();
+                $table->uuid('instance_id')->default('00000000-0000-0000-0000-000000000000');
                 $table->text('email')->nullable();
                 $table->timestampTz('banned_until')->nullable();
                 $table->timestampTz('created_at')->useCurrent();
@@ -34,6 +35,9 @@ return new class extends Migration
             });
         } else {
             Schema::table('auth.users', function (Blueprint $table): void {
+                if (! Schema::hasColumn('auth.users', 'instance_id')) {
+                    $table->uuid('instance_id')->default('00000000-0000-0000-0000-000000000000');
+                }
                 if (! Schema::hasColumn('auth.users', 'email_confirmed_at')) {
                     $table->timestampTz('email_confirmed_at')->nullable();
                 }
