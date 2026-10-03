@@ -70,7 +70,10 @@ export const formatUsersData = (users: User[]) => {
                 : '-',
       // [Joshen] Note that the images might not load due to CSP issues
       img: getAvatarUrl(user),
-      name: getDisplayName(user),
+      ...(() => {
+        const { firstName, middleName, lastName } = getUserNameParts(user)
+        return { first_name: firstName, middle_name: middleName, last_name: lastName }
+      })(),
     }
   })
 }
@@ -143,6 +146,46 @@ function toPrettyJsonString(value: unknown): string | undefined {
   }
 
   return undefined
+}
+
+export function getUserNameParts(user: User): {
+  firstName: string
+  middleName: string
+  lastName: string
+} {
+  const metadata = user.raw_user_meta_data ?? {}
+  const claims = (metadata.custom_claims ?? {}) as Record<string, unknown>
+  const value = (...keys: string[]) => {
+    for (const key of keys) {
+      const candidate = toPrettyJsonString(metadata[key] ?? claims[key])?.trim()
+      if (candidate) return candidate
+    }
+    return ''
+  }
+
+  const fullName = value(
+    'full_name',
+    'fullName',
+    'display_name',
+    'displayName',
+    'name',
+    'cc_full_name',
+    'ccFullName',
+    'cc_display_name',
+    'ccDisplayName'
+  )
+  const nameParts = fullName.split(/\s+/).filter(Boolean)
+  const fallbackFirst = nameParts[0] ?? ''
+  const fallbackLast = nameParts.length > 1 ? nameParts[nameParts.length - 1] : ''
+  const fallbackMiddle = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : ''
+
+  return {
+    firstName: value('first_name', 'firstName', 'given_name', 'givenName') || fallbackFirst,
+    middleName:
+      value('middle_name', 'middleName', 'additional_name', 'additionalName') || fallbackMiddle,
+    lastName:
+      value('last_name', 'lastName', 'family_name', 'familyName', 'surname') || fallbackLast,
+  }
 }
 
 export function getDisplayName(user: User, fallback = '-'): string {
@@ -295,7 +338,17 @@ export const formatUserColumns = ({
   onSelectImpersonateUser: (user: User, destination: 'sql' | 'table-editor') => Promise<void>
   onSelectViewLogs: (user: User) => void
 }) => {
-  const columnOrder = config.map((c) => c.id) ?? columns.map((c) => c.id)
+  const columnOrder = (
+    config.length
+      ? config.flatMap((c) => {
+          if (c.id === 'name') return ['first_name', 'middle_name', 'last_name']
+          return [c.id]
+        })
+      : columns.map((c) => c.id)
+  ).filter((id) => columns.some((column) => column.id === id))
+  const normalizedVisibleColumns = visibleColumns.flatMap((id) =>
+    id === 'name' ? ['first_name', 'middle_name', 'last_name'] : [id]
+  )
 
   let gridColumns = columns.map((col) => {
     const savedConfig = config.find((c) => c.id === col.id)
@@ -507,9 +560,9 @@ export const formatUserColumns = ({
       })
   }
 
-  return visibleColumns.length === 0
+  return normalizedVisibleColumns.length === 0
     ? gridColumns
     : ([profileImageColumn].concat(
-        gridColumns.filter((col) => visibleColumns.includes(col.key))
+        gridColumns.filter((col) => normalizedVisibleColumns.includes(col.key))
       ) as Column<FormattedUserRow>[])
 }

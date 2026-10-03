@@ -42,7 +42,9 @@ export type ColumnConfiguration = { id: string; width?: number }
 export const USERS_TABLE_COLUMNS: UsersTableColumn[] = [
   { id: 'img', name: '', minWidth: 95, width: 95, resizable: false },
   { id: 'id', name: 'UID', width: 280 },
-  { id: 'name', name: 'Display name', minWidth: 0, width: 150 },
+  { id: 'first_name', name: 'First name', minWidth: 120, width: 150 },
+  { id: 'middle_name', name: 'Middle name', minWidth: 120, width: 150 },
+  { id: 'last_name', name: 'Last name', minWidth: 120, width: 150 },
   { id: 'email', name: 'Email', width: 300 },
   { id: 'phone', name: 'Phone' },
   { id: 'providers', name: 'Providers', minWidth: 150 },
