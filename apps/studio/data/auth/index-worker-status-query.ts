@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import { authKeys } from './keys'
 import { executeSql } from '@/data/sql/execute-sql-mutation'
+import { IS_PLATFORM } from '@/lib/constants'
 import { ResponseError, UseCustomQueryOptions } from '@/types'
 
 type IndexWorkerStatusVariables = {
@@ -50,6 +51,6 @@ export const useIndexWorkerStatusQuery = <TData = IndexWorkerStatusData>(
         },
         signal
       ),
-    enabled: enabled && typeof projectRef !== 'undefined',
+    enabled: enabled && IS_PLATFORM && typeof projectRef !== 'undefined',
     ...options,
   })
