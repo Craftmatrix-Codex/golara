@@ -4,6 +4,7 @@ import { expect, test } from '@playwright/test'
 import { requireCanarySecrets } from '../helpers.js'
 
 const projectRoot = '/api/projects/default'
+const storageBucket = process.env.GOLARA_STORAGE_BUCKET ?? 'supadata-default'
 
 test.describe('Golara Canary data plane', () => {
   test('GraphQL executes against the project database', async ({ request }, testInfo) => {
@@ -24,7 +25,7 @@ test.describe('Golara Canary data plane', () => {
     const anonKey = process.env.GOLARA_ANON_KEY as string
     const serviceRoleKey = process.env.GOLARA_SERVICE_ROLE_KEY as string
     const objectKey = `e2e/${randomUUID()}.txt`
-    const objectPath = `${projectRoot}/storage/v1/object/default/${objectKey}`
+    const objectPath = `${projectRoot}/storage/v1/object/${storageBucket}/${objectKey}`
     const content = `golara-canary-${randomUUID()}`
 
     const upload = await request.post(objectPath, {
@@ -39,7 +40,7 @@ test.describe('Golara Canary data plane', () => {
       expect(await download.text()).toBe(content)
       expect(download.headers()['content-type']).toContain('text/plain')
 
-      const list = await request.post(`${projectRoot}/storage/v1/object/list/default`, {
+      const list = await request.post(`${projectRoot}/storage/v1/object/list/${storageBucket}`, {
         headers: { apikey: anonKey },
         data: { prefix: 'e2e/', limit: 100, offset: 0 },
       })
@@ -57,10 +58,13 @@ test.describe('Golara Canary data plane', () => {
 
   test('anonymous storage mutation is rejected', async ({ request }, testInfo) => {
     requireCanarySecrets(testInfo, ['GOLARA_ANON_KEY'])
-    const response = await request.post(`${projectRoot}/storage/v1/object/default/denied.txt`, {
-      headers: { apikey: process.env.GOLARA_ANON_KEY as string },
-      data: 'denied',
-    })
+    const response = await request.post(
+      `${projectRoot}/storage/v1/object/${storageBucket}/denied.txt`,
+      {
+        headers: { apikey: process.env.GOLARA_ANON_KEY as string },
+        data: 'denied',
+      }
+    )
     expect(response.status()).toBe(401)
   })
 

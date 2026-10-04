@@ -52,6 +52,10 @@ type SessionRevoker interface {
 	RevokeSession(context.Context, string) error
 }
 
+type SessionValidator interface {
+	IsSessionActive(context.Context, string) (bool, error)
+}
+
 type AdminUserRepository interface {
 	ListUsers(context.Context, int, int) ([]User, int, error)
 	DeleteUser(context.Context, string) error
@@ -236,10 +240,18 @@ func (s *Service) GetUserByAccessToken(ctx context.Context, accessToken string) 
 		return User{}, ErrInvalidCredentials
 	}
 	claims, err := jwt.VerifyHS256(accessToken, s.jwtSecret, jwt.ValidationOptions{Now: s.now(), Issuer: s.issuer, Audience: s.audience})
-	if err != nil || claims.Subject == "" {
+	if err != nil || claims.Subject == "" || claims.SessionID == "" {
 		return User{}, ErrInvalidCredentials
 	}
 	if err := validateProjectClaims(ctx, claims); err != nil {
+		return User{}, ErrInvalidCredentials
+	}
+	sessionRepository, ok := s.repository.(SessionValidator)
+	if !ok {
+		return User{}, errors.New("session validation is not configured")
+	}
+	isActive, err := sessionRepository.IsSessionActive(ctx, claims.SessionID)
+	if err != nil || !isActive {
 		return User{}, ErrInvalidCredentials
 	}
 	repository, ok := s.repository.(interface {

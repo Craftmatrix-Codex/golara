@@ -28,10 +28,10 @@ export function attachRuntimeGuards(page: Page) {
 
   return {
     assertClean() {
-      expect(pageErrors, 'No uncaught page errors should occur').toEqual([])
-      expect(consoleErrors, 'No browser console errors should occur').toEqual([])
-      expect(failedRequests, 'No network requests should fail').toEqual([])
-      expect(serverErrors, 'No application request should return 5xx').toEqual([])
+      expect(
+        { pageErrors, consoleErrors, failedRequests, serverErrors },
+        'No page, console, network, or 5xx errors should occur'
+      ).toEqual({ pageErrors: [], consoleErrors: [], failedRequests: [], serverErrors: [] })
     },
   }
 }

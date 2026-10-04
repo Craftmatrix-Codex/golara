@@ -36,9 +36,20 @@ test.describe('Golara Canary auth and session lifecycle', () => {
       expect(signup.status(), await signup.text()).toBe(200)
       const signupBody = await signup.json()
       userId = signupBody.user?.id
-      expect(userId).toBeTruthy()
-      expect(signupBody.access_token).toBeTruthy()
-      expect(signupBody.refresh_token).toBeTruthy()
+      expect(userId).toMatch(/^[0-9a-f-]{36}$/i)
+
+      // Registration correctly returns no session while email confirmation is required.
+      // Confirm this disposable Canary user through the authenticated control plane so the
+      // same test can continue through login, refresh, and logout.
+      expect(signupBody.access_token).toBeFalsy()
+      expect(signupBody.refresh_token).toBeFalsy()
+      const confirmation = await request.post('/api/platform/pg-meta/default/query', {
+        data: {
+          query: `UPDATE auth.users SET confirmed_at = now(), email_confirmed_at = now() WHERE id = '${userId}'::uuid RETURNING id`,
+        },
+      })
+      expect(confirmation.status(), await confirmation.text()).toBe(200)
+      expect(await confirmation.json()).toEqual([{ id: userId }])
 
       const login = await request.post(`${projectApi}/token?grant_type=password`, {
         headers: { apikey: anonKey },

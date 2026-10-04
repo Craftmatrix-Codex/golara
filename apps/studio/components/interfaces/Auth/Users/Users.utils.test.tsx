@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { getUserNameParts } from './Users.utils'
+import { getUserNameParts, getUserProviders } from './Users.utils'
 
 const user = (metadata: Record<string, unknown>) =>
   ({ raw_user_meta_data: metadata, providers: [], id: 'user-1' }) as any
@@ -18,5 +18,20 @@ describe('getUserNameParts', () => {
       middleName: 'Lovelace',
       lastName: 'Byron',
     })
+  })
+})
+
+describe('getUserProviders', () => {
+  it('accepts providers returned as an array', () => {
+    expect(getUserProviders(['email', 'sso:saml'])).toEqual(['email', 'sso:saml'])
+  })
+
+  it('parses PostgreSQL JSON providers returned as text', () => {
+    expect(getUserProviders('["email","github"]')).toEqual(['email', 'github'])
+  })
+
+  it('returns an empty list for malformed or missing providers', () => {
+    expect(getUserProviders('{"email":true}')).toEqual([])
+    expect(getUserProviders(null)).toEqual([])
   })
 })

@@ -5,6 +5,21 @@ import (
 	"fmt"
 )
 
+func (r *PostgresRepository) IsSessionActive(ctx context.Context, sessionID string) (bool, error) {
+	quotedSchema := quoteIdentifier(r.schema)
+	var isActive bool
+	err := r.databaseForContext(ctx).QueryRowContext(ctx, fmt.Sprintf(`
+		SELECT EXISTS (
+			SELECT 1
+			FROM %s.sessions
+			WHERE id = $1 AND not_after > NOW()
+		)`, quotedSchema), sessionID).Scan(&isActive)
+	if err != nil {
+		return false, fmt.Errorf("validate auth session: %w", err)
+	}
+	return isActive, nil
+}
+
 func (r *PostgresRepository) RevokeSession(ctx context.Context, sessionID string) error {
 	transaction, err := r.databaseForContext(ctx).BeginTx(ctx, nil)
 	if err != nil {

@@ -36,8 +36,7 @@ test.describe('Golara Canary smoke', () => {
     runtime.assertClean()
   })
 
-  test('critical Studio routes render without 5xx responses', async ({ page }) => {
-    const runtime = attachRuntimeGuards(page)
+  test('critical Studio routes render without 5xx responses', async ({ context }) => {
     const routes = [
       '/project/default/editor',
       '/project/default/sql',
@@ -47,12 +46,15 @@ test.describe('Golara Canary smoke', () => {
 
     for (const route of routes) {
       await test.step(route, async () => {
-        const response = await page.goto(route)
+        const routePage = await context.newPage()
+        const runtime = attachRuntimeGuards(routePage)
+        const response = await routePage.goto(route)
         expect(response?.status(), `${route} document should load`).toBe(200)
-        await expect(page.locator('body')).not.toContainText('Bad Gateway')
+        await expect(routePage.locator('body')).not.toContainText('Bad Gateway')
+        await expectSettledStudio(routePage)
+        runtime.assertClean()
+        await routePage.close()
       })
     }
-
-    runtime.assertClean()
   })
 })

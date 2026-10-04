@@ -16,6 +16,7 @@ type fakeRepository struct {
 	sessionCreate  bool
 	session        Session
 	revokedSession string
+	sessionRevoked bool
 }
 
 func (r *fakeRepository) CreateUser(_ context.Context, email, passwordHash string, metadata map[string]any, confirmed bool) (User, error) {
@@ -60,7 +61,12 @@ func (r *fakeRepository) RefreshSession(_ context.Context, oldHash, newHash stri
 
 func (r *fakeRepository) RevokeSession(_ context.Context, sessionID string) error {
 	r.revokedSession = sessionID
+	r.sessionRevoked = true
 	return nil
+}
+
+func (r *fakeRepository) IsSessionActive(_ context.Context, sessionID string) (bool, error) {
+	return sessionID == r.session.ID && !r.sessionRevoked && time.Now().Before(r.session.ExpiresAt), nil
 }
 
 func TestPasswordHashDoesNotStorePlaintextAndVerifies(t *testing.T) {
@@ -176,5 +182,8 @@ func TestLogoutRevokesSessionFromVerifiedAccessToken(t *testing.T) {
 	}
 	if repository.revokedSession != "session-1" {
 		t.Fatalf("revoked session = %q, want session-1", repository.revokedSession)
+	}
+	if _, err := service.GetUserByAccessToken(context.Background(), issued.AccessToken); !errors.Is(err, ErrInvalidCredentials) {
+		t.Fatalf("GetUserByAccessToken() after logout error = %v, want invalid credentials", err)
 	}
 }

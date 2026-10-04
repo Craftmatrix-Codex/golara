@@ -26,10 +26,25 @@ const isCustomProvider = (provider: string) => provider.startsWith('custom:')
 
 type FormattedUserRow = ReturnType<typeof formatUsersData>[number]
 
+export const getUserProviders = (providers: unknown): string[] => {
+  if (Array.isArray(providers))
+    return providers.filter((provider): provider is string => typeof provider === 'string')
+  if (typeof providers !== 'string') return []
+
+  try {
+    const parsed = JSON.parse(providers)
+    return Array.isArray(parsed)
+      ? parsed.filter((provider): provider is string => typeof provider === 'string')
+      : []
+  } catch {
+    return []
+  }
+}
+
 export const formatUsersData = (users: User[]) => {
   return users.map((user) => {
     const provider: string = (user.raw_app_meta_data?.provider as string) ?? ''
-    const providers: string[] = user.providers.map((x: string) => {
+    const providers: string[] = getUserProviders(user.providers).map((x: string) => {
       if (x.startsWith('sso')) return 'SAML'
       return x
     })
