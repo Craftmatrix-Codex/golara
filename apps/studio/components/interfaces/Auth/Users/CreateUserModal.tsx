@@ -85,7 +85,7 @@ const CreateUserModal = ({ visible, setVisible }: CreateUserModalProps) => {
                 control={form.control}
                 render={({ field }) => (
                   <FormItem className="flex flex-col gap-1.5">
-                    <FormLabel>Email address</FormLabel>
+                    <FormLabel htmlFor="create-user-email">Email address</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Mail
@@ -94,6 +94,7 @@ const CreateUserModal = ({ visible, setVisible }: CreateUserModalProps) => {
                           strokeWidth={1.5}
                         />
                         <Input
+                          id="create-user-email"
                           autoFocus
                           {...field}
                           autoComplete="email"
@@ -115,7 +116,7 @@ const CreateUserModal = ({ visible, setVisible }: CreateUserModalProps) => {
                 control={form.control}
                 render={({ field }) => (
                   <FormItem className="flex flex-col gap-1.5">
-                    <FormLabel>User password</FormLabel>
+                    <FormLabel htmlFor="create-user-password">User password</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Lock
@@ -124,6 +125,7 @@ const CreateUserModal = ({ visible, setVisible }: CreateUserModalProps) => {
                           strokeWidth={1.5}
                         />
                         <Input
+                          id="create-user-password"
                           {...field}
                           autoComplete="new-password"
                           type={showPassword ? 'text' : 'password'}
@@ -155,13 +157,16 @@ const CreateUserModal = ({ visible, setVisible }: CreateUserModalProps) => {
                   <FormItem className="flex items-start gap-x-2.5 pt-1">
                     <FormControl>
                       <Checkbox
+                        id="create-user-auto-confirm"
                         checked={field.value}
                         onCheckedChange={(value) => field.onChange(value)}
                         className="mt-0.5"
                       />
                     </FormControl>
                     <div className="space-y-1">
-                      <FormLabel className="cursor-pointer">Auto-confirm user</FormLabel>
+                      <FormLabel htmlFor="create-user-auto-confirm" className="cursor-pointer">
+                        Auto-confirm user
+                      </FormLabel>
                       <p className="text-xs leading-5 text-foreground-lighter">
                         Skip email verification for this account.
                       </p>
@@ -174,7 +179,7 @@ const CreateUserModal = ({ visible, setVisible }: CreateUserModalProps) => {
             <DialogSectionSeparator />
             <DialogFooter padding="small" className="flex-col items-stretch gap-2">
               <p className="text-xs leading-5 text-foreground-lighter">
-                No confirmation email will be sent when creating a user through this form.
+                No confirmation email is sent when this option is enabled.
               </p>
               <Button
                 block
