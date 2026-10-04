@@ -53,7 +53,7 @@ describe('FunctionsEmptyState', () => {
     expect(screen.getByText('Start with a template')).toBeInTheDocument()
   })
 
-  it('hides the templates section on self-hosted (Docker mode)', () => {
+  it('renders the browser editor and templates on self-hosted Golara', () => {
     mockIsPlatform.value = false
     mockUseDeploymentMode.mockReturnValue({
       isPlatform: false,
@@ -63,7 +63,9 @@ describe('FunctionsEmptyState', () => {
 
     render(<FunctionsEmptyState />)
 
-    expect(screen.queryByText('Start with a template')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open Editor' })).toBeInTheDocument()
+    expect(screen.getByText('Start with a template')).toBeInTheDocument()
+    expect(screen.queryByText('Self-Hosted')).not.toBeInTheDocument()
   })
 
   it('hides the templates section on CLI mode', () => {
@@ -79,7 +81,7 @@ describe('FunctionsEmptyState', () => {
     expect(screen.queryByText('Start with a template')).not.toBeInTheDocument()
   })
 
-  it('renders the self-hosted manual card when isSelfHosted', () => {
+  it('does not show obsolete restart instructions on self-hosted Golara', () => {
     mockIsPlatform.value = false
     mockUseDeploymentMode.mockReturnValue({
       isPlatform: false,
@@ -89,6 +91,6 @@ describe('FunctionsEmptyState', () => {
 
     render(<FunctionsEmptyState />)
 
-    expect(screen.getByText('Self-Hosted')).toBeInTheDocument()
+    expect(screen.queryByText(/restart the functions service/i)).not.toBeInTheDocument()
   })
 })
