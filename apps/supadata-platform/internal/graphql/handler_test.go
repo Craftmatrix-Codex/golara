@@ -24,7 +24,9 @@ func TestHandlerResolvesGraphQLThroughPgGraphql(t *testing.T) {
 	mock.ExpectQuery(`select set_config`).WillReturnRows(sqlmock.NewRows([]string{"set_config"}).AddRow(""))
 	mock.ExpectQuery(`select set_config`).WillReturnRows(sqlmock.NewRows([]string{"set_config"}).AddRow(""))
 	mock.ExpectQuery(`select set_config`).WillReturnRows(sqlmock.NewRows([]string{"set_config"}).AddRow(""))
+	mock.ExpectExec(`SAVEPOINT graphql_schema_refresh`).WillReturnResult(driver.RowsAffected(0))
 	mock.ExpectExec(`SELECT graphql\.increment_schema_version\(\)`).WillReturnResult(driver.RowsAffected(1))
+	mock.ExpectExec(`RELEASE SAVEPOINT graphql_schema_refresh`).WillReturnResult(driver.RowsAffected(0))
 	mock.ExpectQuery(`SELECT last_value FROM graphql\.seq_schema_version`).
 		WillReturnRows(sqlmock.NewRows([]string{"last_value"}).AddRow(42))
 	mock.ExpectQuery(`SELECT graphql\.resolve\(\$1, \$2::jsonb, \$3, \$4::jsonb\) /\* schema_version=42 \*/`).
