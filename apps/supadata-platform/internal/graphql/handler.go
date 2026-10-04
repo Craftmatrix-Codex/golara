@@ -105,6 +105,7 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		}
 	}()
 	var schemaVersion int64
+	_, _ = tx.ExecContext(request.Context(), `SELECT graphql.increment_schema_version()`)
 	if err := tx.QueryRowContext(request.Context(), `SELECT last_value FROM graphql.seq_schema_version`).Scan(&schemaVersion); err != nil {
 		writeJSON(response, http.StatusBadGateway, map[string]any{"errors": []map[string]string{{"message": "GraphQL schema lookup failed"}}})
 		return
