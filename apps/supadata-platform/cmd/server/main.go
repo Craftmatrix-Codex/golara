@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"syscall"
 	"time"
@@ -16,8 +17,10 @@ import (
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/auth"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/config"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/database"
+	functionsapi "github.com/renzaspiras/supabase/apps/supadata-platform/internal/functions"
 	graphqlapi "github.com/renzaspiras/supabase/apps/supadata-platform/internal/graphql"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/httpapi"
+	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/jobs"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/project"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/provisioning"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/realtime"
@@ -88,8 +91,19 @@ func main() {
 	var graphqlHandler http.Handler
 	var storageHandler http.Handler
 	var realtimeHandler http.Handler
+	var functionsHandler http.Handler
+	var jobScheduler *jobs.Scheduler
 	var objectStore *storage.S3Store
 	if databaseConnections != nil && databaseConnections.Primary != nil {
+		if featureErr := database.EnsurePlatformFeatures(context.Background(), databaseConnections.Primary); featureErr != nil {
+			slog.Error("reconcile platform database features", "error", featureErr)
+			os.Exit(1)
+		}
+		if schemaErr := jobs.EnsureSchema(context.Background(), databaseConnections.Primary); schemaErr != nil {
+			slog.Error("reconcile scheduled jobs schema", "error", schemaErr)
+			os.Exit(1)
+		}
+		jobScheduler = jobs.NewScheduler(databaseConnections.Primary, jobs.SchedulerOptions{})
 		if schemaErr := auth.EnsurePostgresSchema(context.Background(), databaseConnections.Primary, "auth"); schemaErr != nil {
 			slog.Error("reconcile Auth schema", "error", schemaErr)
 			os.Exit(1)
@@ -150,6 +164,25 @@ func main() {
 		Issuer:        cfg.AuthIssuer,
 		Audience:      "authenticated",
 		AllowedOrigin: cfg.AllowedOrigin,
+		ChangeSource:  realtime.NewPostgresChangeSource(realtime.PostgresChangeSourceOptions{}),
+	})
+	functionsHandler = functionsapi.NewHandler(functionsapi.HandlerOptions{
+		Executor: functionsapi.NewDenoExecutor(functionsapi.DenoExecutorOptions{
+			RootDir:     filepath.Join(cfg.DataDir, "functions"),
+			RuntimePath: "/usr/bin/deno",
+			WrapperPath: "/usr/local/share/supadata/function-wrapper.ts",
+			Timeout:     30 * time.Second,
+			Environment: map[string]string{
+				"DENO_DIR":                  "/tmp/deno-cache",
+				"DENO_NO_UPDATE_CHECK":      "1",
+				"HOME":                      "/tmp",
+				"SUPABASE_URL":              "https://" + cfg.PublicHost,
+				"SUPABASE_ANON_KEY":         cfg.AnonKey,
+				"SUPABASE_SERVICE_ROLE_KEY": cfg.ServiceRoleKey,
+			},
+		}),
+		APIKeys:   functionsapi.APIKeyConfig{Anon: cfg.AnonKey, ServiceRole: cfg.ServiceRoleKey},
+		JWTSecret: []byte(cfg.JWTSecret),
 	})
 
 	server := &http.Server{
@@ -170,6 +203,7 @@ func main() {
 			GraphQL:              graphqlHandler,
 			Storage:              storageHandler,
 			Realtime:             realtimeHandler,
+			Functions:            functionsHandler,
 		}).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       60 * time.Second,
@@ -177,6 +211,9 @@ func main() {
 
 	shutdownContext, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+	if jobScheduler != nil {
+		go jobScheduler.Start(shutdownContext)
+	}
 
 	go func() {
 		<-shutdownContext.Done()

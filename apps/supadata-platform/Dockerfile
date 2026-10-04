@@ -50,6 +50,8 @@ RUN rm -f bootstrap/cache/*.php && \
 COPY --from=studio-build /app/apps/studio/dist/client /tmp/studio-client
 RUN STUDIO_CLIENT_SOURCE=/tmp/studio-client ./scripts/sync-studio-client.sh
 
+FROM denoland/deno:2.5.3 AS deno-runtime
+
 FROM php:8.4-fpm-bookworm AS production
 RUN apt-get update -qq && \
     apt-get install -y --no-install-recommends nginx ca-certificates curl libonig-dev libpq-dev libsqlite3-dev && \
@@ -59,7 +61,9 @@ RUN apt-get update -qq && \
     mkdir -p /var/lib/supadata/content /var/www/studio && \
     chown -R www-data:www-data /var/lib/supadata
 COPY --from=go-build /out/supadata-platform /usr/local/bin/supadata-platform
+COPY --from=deno-runtime /usr/bin/deno /usr/bin/deno
 COPY --from=laravel-build /app /var/www/studio
+COPY apps/supadata-platform/internal/functions/runtime/function-wrapper.ts /usr/local/share/supadata/function-wrapper.ts
 COPY apps/supadata-platform/nginx.conf /etc/nginx/nginx.conf
 COPY apps/supadata-platform/docker-entrypoint.sh /usr/local/bin/supadata-entrypoint
 RUN chown -R www-data:www-data /var/www/studio/storage /var/www/studio/bootstrap/cache && \

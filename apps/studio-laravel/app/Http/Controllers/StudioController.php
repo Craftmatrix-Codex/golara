@@ -6,10 +6,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use PDO;
 use PDOException;
 use App\Services\PlatformTelemetry;
 use App\Services\StudioContentStore;
+use App\Services\EdgeFunctionStore;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -439,13 +441,76 @@ class StudioController
         return response()->json(['vectorBuckets' => $vectorBuckets]);
     }
 
-    public function functions(string $project): JsonResponse
+    public function functions(string $project, EdgeFunctionStore $store): JsonResponse
     {
-        $record = $this->projectRecord($project);
-        $functions = $record['functions'] ?? [];
-        abort_unless(is_array($functions), 500, 'invalid function metadata');
+        $this->assertProject($project);
 
-        return response()->json(array_values(array_filter($functions, 'is_array')));
+        return response()->json($store->list($project));
+    }
+
+    public function deployFunction(Request $request, string $project, EdgeFunctionStore $store): JsonResponse
+    {
+        $this->assertProject($project);
+        $slug = trim((string) $request->query('slug', ''));
+        try {
+            $metadata = json_decode((string) $request->input('metadata', '{}'), true, flags: JSON_THROW_ON_ERROR);
+            abort_unless(is_array($metadata), 422, 'metadata must be an object');
+            $files = $request->file('file', []);
+            $files = is_array($files) ? $files : [$files];
+
+            return response()->json($store->deploy($project, $slug, $metadata, $files), Response::HTTP_CREATED);
+        } catch (InvalidArgumentException|\JsonException $exception) {
+            return response()->json(['error' => ['message' => $exception->getMessage()]], 422);
+        }
+    }
+
+    public function function(Request $request, string $project, string $slug, EdgeFunctionStore $store): JsonResponse
+    {
+        $this->assertProject($project);
+        try {
+            if ($request->isMethod('patch')) {
+                return response()->json($store->update($project, $slug, $request->json()->all()));
+            }
+
+            return response()->json($store->get($project, $slug));
+        } catch (InvalidArgumentException $exception) {
+            return response()->json(['error' => ['message' => $exception->getMessage()]], 422);
+        } catch (RuntimeException $exception) {
+            return response()->json(['error' => ['message' => $exception->getMessage()]], 404);
+        }
+    }
+
+    public function functionBody(string $project, string $slug, EdgeFunctionStore $store): Response
+    {
+        $this->assertProject($project);
+        try {
+            $deployed = $store->files($project, $slug);
+        } catch (RuntimeException $exception) {
+            abort(404, $exception->getMessage());
+        }
+        $boundary = 'golara-' . Str::random(24);
+        $parts = [];
+        $metadata = ['deno2_entrypoint_path' => $deployed['metadata']['entrypoint_path'] ?? 'index.ts'];
+        $parts[] = "--{$boundary}\r\nContent-Disposition: form-data; name=\"metadata\"\r\nContent-Type: application/json\r\n\r\n"
+            . json_encode($metadata, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\r\n";
+        foreach ($deployed['files'] as $name => $content) {
+            $parts[] = "--{$boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{$name}\"\r\nContent-Type: text/plain\r\n\r\n{$content}\r\n";
+        }
+        $parts[] = "--{$boundary}--\r\n";
+
+        return response(implode('', $parts), 200, ['Content-Type' => "multipart/form-data; boundary={$boundary}"]);
+    }
+
+    public function deleteFunction(string $project, string $slug, EdgeFunctionStore $store): JsonResponse
+    {
+        $this->assertProject($project);
+        try {
+            $store->delete($project, $slug);
+        } catch (RuntimeException $exception) {
+            return response()->json(['error' => ['message' => $exception->getMessage()]], 404);
+        }
+
+        return response()->json(['message' => 'ok']);
     }
 
     public function logDrains(string $project): JsonResponse

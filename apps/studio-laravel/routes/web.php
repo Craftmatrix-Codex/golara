@@ -43,6 +43,10 @@ Route::middleware('studio.auth')
     Route::get('/api/platform/storage/{project}/buckets', [StudioController::class, 'storageBuckets']);
     Route::get('/api/platform/storage/{project}/vector-buckets', [StudioController::class, 'vectorBuckets']);
     Route::get('/api/v1/projects/{project}/functions', [StudioController::class, 'functions']);
+    Route::post('/api/v1/projects/{project}/functions/deploy', [StudioController::class, 'deployFunction']);
+    Route::get('/api/v1/projects/{project}/functions/{slug}/body', [StudioController::class, 'functionBody']);
+    Route::match(['get', 'patch'], '/api/v1/projects/{project}/functions/{slug}', [StudioController::class, 'function']);
+    Route::delete('/api/v1/projects/{project}/functions/{slug}', [StudioController::class, 'deleteFunction']);
     Route::get('/api/platform/projects/{project}/analytics/log-drains', [StudioController::class, 'logDrains']);
     Route::any('/api/{path?}', [StudioController::class, 'apiNotFound'])
         ->where('path', '.*');

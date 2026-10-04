@@ -41,6 +41,8 @@ test.describe('Golara Canary smoke', () => {
       '/project/default/editor',
       '/project/default/sql',
       '/project/default/storage/buckets',
+      '/project/default/functions',
+      '/project/default/integrations/cron/jobs',
       '/project/default/settings/api',
     ]
 

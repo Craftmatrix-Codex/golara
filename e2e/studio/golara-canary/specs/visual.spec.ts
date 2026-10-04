@@ -73,4 +73,27 @@ test.describe('Golara Canary visual regression', () => {
 
     runtime.assertClean()
   })
+
+  test('Edge Functions and scheduled Jobs are visually captured', async ({ page }) => {
+    const runtime = attachRuntimeGuards(page)
+    await mkdir(screenshotDir, { recursive: true })
+
+    await page.goto('/project/default/functions')
+    await expectSettledStudio(page)
+    await expect(page.locator('body')).toContainText('Edge Functions')
+    await page.screenshot({
+      path: path.join(screenshotDir, 'edge-functions-desktop.png'),
+      fullPage: true,
+    })
+
+    await page.goto('/project/default/integrations/cron/jobs')
+    await expectSettledStudio(page)
+    await expect(page.locator('body')).toContainText('Cron Jobs')
+    await page.screenshot({
+      path: path.join(screenshotDir, 'scheduled-jobs-desktop.png'),
+      fullPage: true,
+    })
+
+    runtime.assertClean()
+  })
 })

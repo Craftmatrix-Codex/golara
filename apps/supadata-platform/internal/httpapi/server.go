@@ -81,6 +81,7 @@ type ServerOptions struct {
 	GraphQL              http.Handler
 	Storage              http.Handler
 	Realtime             http.Handler
+	Functions            http.Handler
 }
 
 type Server struct {
@@ -99,6 +100,7 @@ type Server struct {
 	graphql              http.Handler
 	storage              http.Handler
 	realtime             http.Handler
+	functions            http.Handler
 }
 
 func NewServer(options ServerOptions) *Server {
@@ -106,7 +108,7 @@ func NewServer(options ServerOptions) *Server {
 	if origin == "" {
 		origin = "*"
 	}
-	return &Server{token: options.Token, controlPlaneUsername: options.ControlPlaneUsername, controlPlanePassword: options.ControlPlanePassword, allowedOrigin: origin, registry: options.Registry, projectResolver: options.ProjectResolver, databaseResolver: options.DatabaseResolver, requireProjectScope: options.RequireProjectScope, auth: options.Auth, apiKeys: options.APIKeys, authSettings: options.AuthSettings, rest: options.REST, graphql: options.GraphQL, storage: options.Storage, realtime: options.Realtime}
+	return &Server{token: options.Token, controlPlaneUsername: options.ControlPlaneUsername, controlPlanePassword: options.ControlPlanePassword, allowedOrigin: origin, registry: options.Registry, projectResolver: options.ProjectResolver, databaseResolver: options.DatabaseResolver, requireProjectScope: options.RequireProjectScope, auth: options.Auth, apiKeys: options.APIKeys, authSettings: options.AuthSettings, rest: options.REST, graphql: options.GraphQL, storage: options.Storage, realtime: options.Realtime, functions: options.Functions}
 }
 
 func (s *Server) Handler() http.Handler {
@@ -165,6 +167,14 @@ func (s *Server) serveHTTP(response http.ResponseWriter, request *http.Request) 
 			return
 		}
 		s.realtime.ServeHTTP(response, request)
+		return
+	}
+	if strings.HasPrefix(request.URL.Path, "/functions/v1/") {
+		if s.functions == nil {
+			writeJSON(response, http.StatusServiceUnavailable, map[string]string{"error": "functions service unavailable"})
+			return
+		}
+		s.functions.ServeHTTP(response, request)
 		return
 	}
 	if request.Method == http.MethodGet && request.URL.Path == "/health" {
@@ -367,7 +377,7 @@ func (s *Server) serveHTTP(response http.ResponseWriter, request *http.Request) 
 }
 
 func isProjectScopedPath(path string) bool {
-	if strings.HasPrefix(path, "/rest/v1/") || strings.HasPrefix(path, "/storage/v1/") || strings.HasPrefix(path, "/realtime/v1/") || path == "/graphql/v1" {
+	if strings.HasPrefix(path, "/rest/v1/") || strings.HasPrefix(path, "/storage/v1/") || strings.HasPrefix(path, "/realtime/v1/") || strings.HasPrefix(path, "/functions/v1/") || path == "/graphql/v1" {
 		return true
 	}
 	return strings.HasPrefix(path, "/auth/v1/") && path != "/auth/v1/health"
@@ -404,7 +414,7 @@ func normalizeProjectScopedSDKPath(request *http.Request) *http.Request {
 	}
 	projectID := remainder[:separator]
 	sdkPath := "/" + remainder[separator+1:]
-	for _, servicePrefix := range []string{"/rest/v1/", "/auth/v1/", "/storage/v1/", "/realtime/v1/", "/graphql/v1"} {
+	for _, servicePrefix := range []string{"/rest/v1/", "/auth/v1/", "/storage/v1/", "/realtime/v1/", "/functions/v1/", "/graphql/v1"} {
 		if !strings.HasPrefix(sdkPath, servicePrefix) {
 			continue
 		}

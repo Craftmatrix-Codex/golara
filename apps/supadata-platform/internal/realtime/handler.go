@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -19,12 +20,32 @@ type APIKeyConfig struct {
 	ServiceRole string
 }
 
+type ChangeSubscription struct {
+	Event  string `json:"event"`
+	Schema string `json:"schema"`
+	Table  string `json:"table"`
+	Filter string `json:"filter,omitempty"`
+}
+
+type ChangeEvent struct {
+	Schema    string         `json:"schema"`
+	Table     string         `json:"table"`
+	Event     string         `json:"type"`
+	Record    map[string]any `json:"record,omitempty"`
+	OldRecord map[string]any `json:"old_record,omitempty"`
+}
+
+type ChangeSource interface {
+	Subscribe(context.Context, string, ChangeSubscription, func(ChangeEvent)) (func(), error)
+}
+
 type HandlerOptions struct {
 	APIKeys       APIKeyConfig
 	JWTSecret     []byte
 	Issuer        string
 	Audience      string
 	AllowedOrigin string
+	ChangeSource  ChangeSource
 }
 
 type Handler struct {
@@ -33,7 +54,17 @@ type Handler struct {
 	issuer        string
 	audience      string
 	allowedOrigin string
+	changeSource  ChangeSource
 	upgrader      websocket.Upgrader
+	hubMu         sync.RWMutex
+	topics        map[string]map[*realtimeClient]struct{}
+}
+
+type realtimeClient struct {
+	connection    *websocket.Conn
+	role          string
+	writeMu       sync.Mutex
+	unsubscribers []func()
 }
 
 func NewHandler(options HandlerOptions) *Handler {
@@ -44,6 +75,8 @@ func NewHandler(options HandlerOptions) *Handler {
 		issuer:        options.Issuer,
 		audience:      options.Audience,
 		allowedOrigin: allowedOrigin,
+		changeSource:  options.ChangeSource,
+		topics:        make(map[string]map[*realtimeClient]struct{}),
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  4 << 10,
 			WriteBufferSize: 4 << 10,
@@ -60,7 +93,8 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		writeJSON(response, http.StatusNotFound, map[string]string{"error": "realtime route not found"})
 		return
 	}
-	if h.apiKeyRole(request.URL.Query().Get("apikey"), request.Header.Get("apikey")) == "" {
+	role := h.apiKeyRole(request.URL.Query().Get("apikey"), request.Header.Get("apikey"))
+	if role == "" {
 		writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
 	}
@@ -73,6 +107,8 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		return
 	}
 	defer connection.Close()
+	client := &realtimeClient{connection: connection, role: role}
+	defer h.removeClient(client)
 	connection.SetReadLimit(1 << 20)
 	joinedTopics := make(map[string]struct{})
 	for {
@@ -80,13 +116,13 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		if err := connection.ReadJSON(&message); err != nil {
 			return
 		}
-		if err := h.handleMessage(request.Context(), connection, message, joinedTopics); err != nil {
+		if err := h.handleMessage(request.Context(), client, message, joinedTopics); err != nil {
 			return
 		}
 	}
 }
 
-func (h *Handler) handleMessage(ctx context.Context, connection *websocket.Conn, message []json.RawMessage, joinedTopics map[string]struct{}) error {
+func (h *Handler) handleMessage(ctx context.Context, client *realtimeClient, message []json.RawMessage, joinedTopics map[string]struct{}) error {
 	if len(message) != 5 {
 		return errors.New("invalid realtime message")
 	}
@@ -99,22 +135,78 @@ func (h *Handler) handleMessage(ctx context.Context, connection *websocket.Conn,
 	}
 	switch {
 	case event == "heartbeat" && topic == "phoenix":
-		return writeReply(connection, joinReference, reference, topic, "ok", map[string]any{})
+		return client.writeReply(joinReference, reference, topic, "ok", map[string]any{})
 	case event == "phx_join":
 		if !strings.HasPrefix(topic, "realtime:public:") || strings.TrimPrefix(topic, "realtime:public:") == "" {
-			return writeReply(connection, joinReference, reference, topic, "error", map[string]string{"reason": "unauthorized topic"})
+			return client.writeReply(joinReference, reference, topic, "error", map[string]string{"reason": "unauthorized topic"})
 		}
-		joinedTopics[ProjectTopicKey(ctx, topic)] = struct{}{}
-		return writeReply(connection, joinReference, reference, topic, "ok", map[string]any{})
+		topicKey := ProjectTopicKey(ctx, topic)
+		joinedTopics[topicKey] = struct{}{}
+		h.addClient(topicKey, client)
+		if err := h.subscribePostgresChanges(ctx, client, topic, message[4]); err != nil {
+			delete(joinedTopics, topicKey)
+			h.removeClientFromTopic(topicKey, client)
+			return client.writeReply(joinReference, reference, topic, "error", map[string]string{"reason": "postgres changes unavailable"})
+		}
+		return client.writeReply(joinReference, reference, topic, "ok", map[string]any{})
 	case event == "phx_leave":
-		delete(joinedTopics, ProjectTopicKey(ctx, topic))
-		if err := writeReply(connection, joinReference, reference, topic, "ok", map[string]any{}); err != nil {
+		topicKey := ProjectTopicKey(ctx, topic)
+		delete(joinedTopics, topicKey)
+		h.removeClientFromTopic(topicKey, client)
+		if err := client.writeReply(joinReference, reference, topic, "ok", map[string]any{}); err != nil {
 			return err
 		}
 		return errors.New("connection left")
+	case event == "broadcast":
+		topicKey := ProjectTopicKey(ctx, topic)
+		if _, joined := joinedTopics[topicKey]; !joined {
+			return client.writeReply(joinReference, reference, topic, "error", map[string]string{"reason": "not joined"})
+		}
+		h.broadcast(topicKey, []any{nil, reference, topic, "broadcast", message[4]})
+		return client.writeReply(joinReference, reference, topic, "ok", map[string]any{})
 	default:
-		return writeReply(connection, joinReference, reference, topic, "error", map[string]string{"reason": "unsupported event"})
+		return client.writeReply(joinReference, reference, topic, "error", map[string]string{"reason": "unsupported event"})
 	}
+}
+
+func (h *Handler) subscribePostgresChanges(ctx context.Context, client *realtimeClient, topic string, raw json.RawMessage) error {
+	var payload struct {
+		Config struct {
+			PostgresChanges []ChangeSubscription `json:"postgres_changes"`
+		} `json:"config"`
+	}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return err
+	}
+	if len(payload.Config.PostgresChanges) == 0 {
+		return nil
+	}
+	if client.role != "service_role" {
+		return errors.New("postgres changes require service role")
+	}
+	if h.changeSource == nil {
+		return errors.New("change source unavailable")
+	}
+	projectID := "default"
+	if scope, ok := project.ScopeFromContext(ctx); ok && scope.ID != "" {
+		projectID = scope.ID
+	}
+	start := len(client.unsubscribers)
+	for _, subscription := range payload.Config.PostgresChanges {
+		subscription.Event = strings.ToUpper(subscription.Event)
+		unsubscribe, err := h.changeSource.Subscribe(ctx, projectID, subscription, func(event ChangeEvent) {
+			_ = client.writeJSON([]any{nil, nil, topic, "postgres_changes", map[string]any{"ids": []int{1}, "data": event}})
+		})
+		if err != nil {
+			for _, stop := range client.unsubscribers[start:] {
+				stop()
+			}
+			client.unsubscribers = client.unsubscribers[:start]
+			return err
+		}
+		client.unsubscribers = append(client.unsubscribers, unsubscribe)
+	}
+	return nil
 }
 
 func (h *Handler) validateAccessToken(request *http.Request) error {
@@ -161,8 +253,59 @@ func (h *Handler) apiKeyRole(queryKey, headerKey string) string {
 	return ""
 }
 
-func writeReply(connection *websocket.Conn, joinReference, reference, topic, status string, response any) error {
-	return connection.WriteJSON([]any{joinReference, reference, topic, "phx_reply", map[string]any{"status": status, "response": response}})
+func (c *realtimeClient) writeJSON(payload any) error {
+	c.writeMu.Lock()
+	defer c.writeMu.Unlock()
+	return c.connection.WriteJSON(payload)
+}
+
+func (c *realtimeClient) writeReply(joinReference, reference, topic, status string, response any) error {
+	return c.writeJSON([]any{joinReference, reference, topic, "phx_reply", map[string]any{"status": status, "response": response}})
+}
+
+func (h *Handler) addClient(topic string, client *realtimeClient) {
+	h.hubMu.Lock()
+	defer h.hubMu.Unlock()
+	if h.topics[topic] == nil {
+		h.topics[topic] = make(map[*realtimeClient]struct{})
+	}
+	h.topics[topic][client] = struct{}{}
+}
+
+func (h *Handler) removeClientFromTopic(topic string, client *realtimeClient) {
+	h.hubMu.Lock()
+	defer h.hubMu.Unlock()
+	delete(h.topics[topic], client)
+	if len(h.topics[topic]) == 0 {
+		delete(h.topics, topic)
+	}
+}
+
+func (h *Handler) removeClient(client *realtimeClient) {
+	for _, unsubscribe := range client.unsubscribers {
+		unsubscribe()
+	}
+	client.unsubscribers = nil
+	h.hubMu.Lock()
+	defer h.hubMu.Unlock()
+	for topic, clients := range h.topics {
+		delete(clients, client)
+		if len(clients) == 0 {
+			delete(h.topics, topic)
+		}
+	}
+}
+
+func (h *Handler) broadcast(topic string, payload any) {
+	h.hubMu.RLock()
+	clients := make([]*realtimeClient, 0, len(h.topics[topic]))
+	for client := range h.topics[topic] {
+		clients = append(clients, client)
+	}
+	h.hubMu.RUnlock()
+	for _, client := range clients {
+		_ = client.writeJSON(payload)
+	}
 }
 
 func writeJSON(response http.ResponseWriter, status int, payload any) {
