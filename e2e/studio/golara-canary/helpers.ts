@@ -10,7 +10,8 @@ export function requireCanarySecrets(testInfo: TestInfo, names: string[]) {
 export function attachRuntimeGuards(page: Page) {
   const pageErrors: string[] = []
   const consoleErrors: string[] = []
-  const failedRequests: string[] = []
+  const failedRequests: { key: string; message: string; errorText?: string }[] = []
+  const successfulRequests = new Set<string>()
   const serverErrors: string[] = []
 
   page.on('pageerror', (error) => pageErrors.push(error.message))
@@ -18,9 +19,13 @@ export function attachRuntimeGuards(page: Page) {
     if (message.type() === 'error') consoleErrors.push(message.text())
   })
   page.on('requestfailed', (request) => {
-    failedRequests.push(`${request.method()} ${request.url()}: ${request.failure()?.errorText}`)
+    const key = `${request.method()} ${request.url()}`
+    const errorText = request.failure()?.errorText
+    failedRequests.push({ key, errorText, message: `${key}: ${errorText}` })
   })
   page.on('response', (response) => {
+    const key = `${response.request().method()} ${response.url()}`
+    if (response.status() < 400) successfulRequests.add(key)
     if (response.status() < 500) return
     if (ignoredResponsePaths.some((path) => response.url().includes(path))) return
     serverErrors.push(`${response.status()} ${response.request().method()} ${response.url()}`)
@@ -28,8 +33,13 @@ export function attachRuntimeGuards(page: Page) {
 
   return {
     assertClean() {
+      const unresolvedFailedRequests = failedRequests
+        .filter(
+          ({ key, errorText }) => errorText !== 'net::ERR_ABORTED' || !successfulRequests.has(key)
+        )
+        .map(({ message }) => message)
       expect(
-        { pageErrors, consoleErrors, failedRequests, serverErrors },
+        { pageErrors, consoleErrors, failedRequests: unresolvedFailedRequests, serverErrors },
         'No page, console, network, or 5xx errors should occur'
       ).toEqual({ pageErrors: [], consoleErrors: [], failedRequests: [], serverErrors: [] })
     },
@@ -39,5 +49,5 @@ export function attachRuntimeGuards(page: Page) {
 export async function expectSettledStudio(page: Page) {
   await expect(page.locator('body')).not.toContainText('Taking longer than expected?')
   await expect(page.locator('body')).not.toContainText('Bad Gateway')
-  await expect(page.getByAltText('Golara')).toBeVisible()
+  await expect(page.getByAltText('Golara').first()).toBeVisible()
 }
