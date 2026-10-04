@@ -42,7 +42,7 @@ Route::middleware('studio.auth')
     Route::get('/api/platform/projects/{project}/content/folders/{id}', [StudioController::class, 'contentFolder']);
     Route::get('/api/platform/projects/{project}/content/item/{id}', [StudioController::class, 'contentItem']);
     Route::match(['get', 'put', 'delete'], '/api/platform/projects/{project}/content', [StudioController::class, 'content']);
-    Route::match(['get', 'post'], '/api/platform/storage/{project}/buckets', [StudioController::class, 'storageBuckets']);
+    Route::match(['get', 'post', 'delete'], '/api/platform/storage/{project}/buckets', [StudioController::class, 'storageBuckets']);
     Route::get('/api/platform/storage/{project}/vector-buckets', [StudioController::class, 'vectorBuckets']);
     Route::get('/api/v1/projects/{project}/functions', [StudioController::class, 'functions']);
     Route::post('/api/v1/projects/{project}/functions/deploy', [StudioController::class, 'deployFunction']);

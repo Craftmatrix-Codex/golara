@@ -581,6 +581,31 @@ class StudioController
     {
         $record = $this->projectRecord($project);
 
+        if ($request->isMethod('delete')) {
+            $id = trim((string) $request->query('id', $request->input('id', '')));
+            abort_unless($id !== '', 422, 'Bucket name is required');
+            $path = config('studio.registry_path');
+            abort_unless(is_string($path) && is_file($path), 503, 'Project registry unavailable');
+            $registry = json_decode((string) file_get_contents($path), true);
+            abort_unless(is_array($registry) && is_array($registry['projects'] ?? null), 503, 'Project registry unavailable');
+            $deleted = false;
+            foreach ($registry['projects'] as &$candidate) {
+                if (! is_array($candidate) || ($candidate['id'] ?? null) !== $project) continue;
+                $buckets = $candidate['scope']['storage']['buckets'] ?? [];
+                if (! is_array($buckets)) continue;
+                $next = array_values(array_filter($buckets, fn ($bucket): bool => ! is_array($bucket) || ($bucket['id'] ?? null) !== $id));
+                $deleted = count($next) !== count($buckets);
+                $candidate['scope']['storage']['buckets'] = $next;
+                break;
+            }
+            unset($candidate);
+            abort_unless($deleted, 404);
+            $temporary = $path . '.tmp-' . bin2hex(random_bytes(6));
+            file_put_contents($temporary, json_encode($registry, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL, LOCK_EX);
+            rename($temporary, $path);
+            return response()->json(['name' => $id]);
+        }
+
         if ($request->isMethod('post')) {
             $id = trim((string) $request->input('id', ''));
             abort_unless(preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$/', $id) === 1, 422, 'Invalid bucket name');
