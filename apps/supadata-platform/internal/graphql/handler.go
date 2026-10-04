@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -103,6 +104,11 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 			_ = tx.Rollback()
 		}
 	}()
+	var schemaVersion int64
+	if err := tx.QueryRowContext(request.Context(), `SELECT last_value FROM graphql.seq_schema_version`).Scan(&schemaVersion); err != nil {
+		writeJSON(response, http.StatusBadGateway, map[string]any{"errors": []map[string]string{{"message": "GraphQL schema lookup failed"}}})
+		return
+	}
 	if err := setRequestRole(request.Context(), tx, claims, role); err != nil {
 		writeJSON(response, http.StatusBadGateway, map[string]any{"errors": []map[string]string{{"message": "GraphQL role setup failed"}}})
 		return
@@ -114,8 +120,9 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 	}
 
 	var result []byte
+	resolveQuery := fmt.Sprintf(`SELECT graphql.resolve($1, $2::jsonb, $3, $4::jsonb) /* schema_version=%d */`, schemaVersion)
 	err = tx.QueryRowContext(request.Context(),
-		`SELECT graphql.resolve($1, $2::jsonb, $3, $4::jsonb)`,
+		resolveQuery,
 		body.Query, string(variables), operationName, string(extensions),
 	).Scan(&result)
 	if err != nil {

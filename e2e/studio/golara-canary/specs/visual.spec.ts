@@ -88,7 +88,7 @@ test.describe('Golara Canary visual regression', () => {
 
     await page.goto('/project/default/integrations/cron/jobs')
     await expectSettledStudio(page)
-    await expect(page.locator('body')).toContainText('Cron Jobs')
+    await expect(page.locator('body')).toContainText('No cron jobs in your project')
     await page.screenshot({
       path: path.join(screenshotDir, 'scheduled-jobs-desktop.png'),
       fullPage: true,
