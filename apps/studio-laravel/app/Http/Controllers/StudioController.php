@@ -158,6 +158,40 @@ class StudioController
         ]));
     }
 
+    public function credentials(string $project): JsonResponse
+    {
+        $record = $this->projectRecord($project);
+        $connection = $this->databaseConnectionDetails();
+        $createdAt = is_string($record['inserted_at'] ?? null) && $record['inserted_at'] !== ''
+            ? $record['inserted_at']
+            : null;
+        $apiKeyConfigured = trim((string) (env('SUPABASE_ANON_KEY') ?: env('ANON_KEY'))) !== '';
+        $deployableConfigured = trim((string) (env('SUPADATA_STUDIO_AUTH_PASSWORD') ?: env('SUPADATA_DEPLOYABLE_PASSWORD'))) !== '';
+        $postgresConfigured = $connection['host'] !== '' && $connection['database'] !== '';
+
+        return response()->json([
+            'apiKey' => $apiKeyConfigured ? ['createdAt' => $createdAt] : null,
+            'deployablePassword' => $deployableConfigured ? ['createdAt' => $createdAt] : null,
+            'postgres' => $postgresConfigured ? [
+                'createdAt' => $createdAt,
+                'host' => $connection['host'],
+                'port' => $connection['port'],
+                'database' => $connection['database'],
+                'username' => $connection['user'],
+            ] : null,
+        ]);
+    }
+
+    public function rotateCredential(string $project, string $type): JsonResponse
+    {
+        $this->projectRecord($project);
+        abort_unless(in_array($type, ['api-key', 'deployable-password', 'postgres-password'], true), 404);
+
+        return response()->json([
+            'error' => ['message' => 'Credential rotation is not configured for this self-hosted deployment'],
+        ], 501);
+    }
+
     public function profile(): JsonResponse
     {
         $project = $this->projectRecord('default');
@@ -546,6 +580,64 @@ class StudioController
     public function storageBuckets(Request $request, string $project): JsonResponse
     {
         $record = $this->projectRecord($project);
+
+        if ($request->isMethod('post')) {
+            $id = trim((string) $request->input('id', ''));
+            abort_unless(preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$/', $id) === 1, 422, 'Invalid bucket name');
+
+            $path = config('studio.registry_path');
+            abort_unless(is_string($path) && is_file($path), 503, 'Project registry unavailable');
+            $registry = json_decode((string) file_get_contents($path), true);
+            abort_unless(is_array($registry) && is_array($registry['projects'] ?? null), 503, 'Project registry unavailable');
+
+            $created = null;
+            foreach ($registry['projects'] as &$candidate) {
+                if (! is_array($candidate) || ($candidate['id'] ?? null) !== $project) {
+                    continue;
+                }
+                $candidate['scope'] = is_array($candidate['scope'] ?? null) ? $candidate['scope'] : [];
+                $candidate['scope']['storage'] = is_array($candidate['scope']['storage'] ?? null)
+                    ? $candidate['scope']['storage']
+                    : [];
+                $candidate['scope']['storage']['buckets'] = is_array($candidate['scope']['storage']['buckets'] ?? null)
+                    ? $candidate['scope']['storage']['buckets']
+                    : [];
+                foreach ($candidate['scope']['storage']['buckets'] as $existing) {
+                    if (is_array($existing) && ($existing['id'] ?? null) === $id) {
+                        return response()->json(['error' => ['message' => 'Bucket already exists']], 409);
+                    }
+                }
+                $timestamp = now()->toIso8601String();
+                $created = [
+                    'id' => $id,
+                    'name' => $id,
+                    'owner' => '',
+                    'public' => (bool) $request->input('public', false),
+                    'type' => is_string($request->input('type')) && $request->input('type') !== ''
+                        ? $request->input('type')
+                        : 'STANDARD',
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                ];
+                if (is_array($request->input('allowed_mime_types'))) {
+                    $created['allowed_mime_types'] = array_values(array_filter($request->input('allowed_mime_types'), 'is_string'));
+                }
+                if (is_numeric($request->input('file_size_limit')) && (int) $request->input('file_size_limit') >= 0) {
+                    $created['file_size_limit'] = (int) $request->input('file_size_limit');
+                }
+                $candidate['scope']['storage']['buckets'][] = $created;
+                break;
+            }
+            unset($candidate);
+
+            abort_unless(is_array($created), 404);
+            $temporary = $path . '.tmp-' . bin2hex(random_bytes(6));
+            file_put_contents($temporary, json_encode($registry, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL, LOCK_EX);
+            rename($temporary, $path);
+
+            return response()->json(['name' => $id]);
+        }
+
         $buckets = $this->projectBucketRecords($record);
         $search = trim((string) $request->query('search', ''));
 

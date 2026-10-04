@@ -142,6 +142,54 @@ class StudioStorageBucketTest extends TestCase
         }
     }
 
+    public function test_bucket_creation_persists_project_scoped_metadata(): void
+    {
+        $path = $this->writeRegistry([
+            'currentProjectId' => 'alpha',
+            'projects' => [['id' => 'alpha', 'name' => 'Alpha', 'status' => 'ready', 'scope' => ['storage' => ['buckets' => []]]]],
+        ]);
+        config(['studio.registry_path' => $path]);
+
+        try {
+            $this->withBasicAuth('studio', 'password')
+                ->postJson('/api/platform/storage/alpha/buckets', [
+                    'id' => 'uploads',
+                    'public' => false,
+                    'type' => 'STANDARD',
+                    'allowed_mime_types' => ['image/png'],
+                    'file_size_limit' => 1048576,
+                ])
+                ->assertOk()
+                ->assertExactJson(['name' => 'uploads']);
+
+            $this->withBasicAuth('studio', 'password')
+                ->getJson('/api/platform/storage/alpha/buckets')
+                ->assertOk()
+                ->assertJsonPath('0.id', 'uploads')
+                ->assertJsonPath('0.allowed_mime_types.0', 'image/png')
+                ->assertJsonPath('0.file_size_limit', 1048576);
+        } finally {
+            @unlink($path);
+        }
+    }
+
+    public function test_bucket_creation_rejects_duplicates(): void
+    {
+        $path = $this->writeRegistry([
+            'currentProjectId' => 'alpha',
+            'projects' => [['id' => 'alpha', 'name' => 'Alpha', 'status' => 'ready', 'scope' => ['storage' => ['buckets' => [['id' => 'uploads']]]]]],
+        ]);
+        config(['studio.registry_path' => $path]);
+
+        try {
+            $this->withBasicAuth('studio', 'password')
+                ->postJson('/api/platform/storage/alpha/buckets', ['id' => 'uploads'])
+                ->assertStatus(409);
+        } finally {
+            @unlink($path);
+        }
+    }
+
     /** @param array<string, mixed> $registry */
     private function writeRegistry(array $registry): string
     {

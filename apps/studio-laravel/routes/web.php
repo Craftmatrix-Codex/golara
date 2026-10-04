@@ -22,6 +22,8 @@ Route::middleware('studio.auth')
     Route::get('/api/platform/integrations/github/authorization', [StudioController::class, 'githubAuthorization']);
     Route::get('/api/platform/projects/current', [StudioController::class, 'currentProject']);
     Route::get('/api/platform/projects/{project}', [StudioController::class, 'project']);
+    Route::get('/api/platform/projects/{project}/credentials', [StudioController::class, 'credentials']);
+    Route::post('/api/platform/projects/{project}/credentials/{type}/rotate', [StudioController::class, 'rotateCredential']);
     Route::get('/api/ai/sql/check-api-key', [StudioController::class, 'aiSqlCheckApiKey']);
     Route::post('/api/platform/projects/{project}/api/graphql', [StudioController::class, 'graphql']);
     Route::match(['get', 'head'], '/api/platform/projects/{project}/api/rest', [StudioController::class, 'apiRest']);
@@ -40,7 +42,7 @@ Route::middleware('studio.auth')
     Route::get('/api/platform/projects/{project}/content/folders/{id}', [StudioController::class, 'contentFolder']);
     Route::get('/api/platform/projects/{project}/content/item/{id}', [StudioController::class, 'contentItem']);
     Route::match(['get', 'put', 'delete'], '/api/platform/projects/{project}/content', [StudioController::class, 'content']);
-    Route::get('/api/platform/storage/{project}/buckets', [StudioController::class, 'storageBuckets']);
+    Route::match(['get', 'post'], '/api/platform/storage/{project}/buckets', [StudioController::class, 'storageBuckets']);
     Route::get('/api/platform/storage/{project}/vector-buckets', [StudioController::class, 'vectorBuckets']);
     Route::get('/api/v1/projects/{project}/functions', [StudioController::class, 'functions']);
     Route::post('/api/v1/projects/{project}/functions/deploy', [StudioController::class, 'deployFunction']);

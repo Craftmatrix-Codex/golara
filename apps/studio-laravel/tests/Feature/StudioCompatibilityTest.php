@@ -11,6 +11,29 @@ class StudioCompatibilityTest extends TestCase
         return $this->withBasicAuth('studio', 'password');
     }
 
+    public function test_project_credentials_return_metadata_without_secret_values(): void
+    {
+        config()->set('studio.projects', [[
+            'id' => 'default',
+            'ref' => 'default',
+            'name' => 'Default Project',
+            'status' => 'ready',
+            'inserted_at' => '2026-09-06T00:00:00Z',
+        ]]);
+        config()->set('studio.registry_path', '');
+        config()->set('database.connections.pgsql.url', 'postgresql://runtime:secret@db.example.test:5432/app');
+
+        $response = $this->auth()->getJson('/api/platform/projects/default/credentials');
+
+        $response->assertOk()
+            ->assertJsonStructure(['apiKey', 'deployablePassword', 'postgres'])
+            ->assertJsonMissing(['secret'])
+            ->assertJsonPath('postgres.host', 'db.example.test')
+            ->assertJsonPath('postgres.port', 5432)
+            ->assertJsonPath('postgres.database', 'app')
+            ->assertJsonPath('postgres.username', 'runtime');
+    }
+
     public function test_pg_meta_query_returns_a_successful_json_result(): void
     {
         $response = $this->auth()->postJson('/api/platform/pg-meta/default/query', [

@@ -1,7 +1,10 @@
 import { existsSync } from 'node:fs'
 import { defineConfig, devices } from '@playwright/test'
 
-const baseURL = process.env.GOLARA_BASE_URL ?? 'https://go-alpha.craftmatrix.org'
+const baseURL =
+  process.env.GOLARA_BASE_URL ??
+  process.env.PLAYWRIGHT_BASE_URL ??
+  'https://go-alpha.craftmatrix.org'
 const username = process.env.GOLARA_STUDIO_USERNAME
 const password = process.env.GOLARA_STUDIO_PASSWORD
 const systemChromium = process.env.GOLARA_CHROMIUM_EXECUTABLE ?? '/snap/bin/chromium'
