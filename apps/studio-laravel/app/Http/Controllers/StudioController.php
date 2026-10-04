@@ -359,6 +359,12 @@ class StudioController
                 $this->ensureAuthCompatibilitySchema($pdo);
             }
             $statementQuery = $this->executeLeadingFunctionStatement($pdo, $query);
+            if (preg_match('/^\\s*BEGIN\\b/i', $statementQuery) === 1) {
+                $pdo->exec($statementQuery);
+                $this->refreshGraphQLSchemaVersion($pdo, $statementQuery);
+                return response()->json([]);
+            }
+
             $statement = $pdo->query($statementQuery);
             if ($statement === false) return response()->json([]);
 
@@ -373,7 +379,7 @@ class StudioController
 
     private function refreshGraphQLSchemaVersion(PDO $pdo, string $query): void
     {
-        if (preg_match('/^\\s*(CREATE|ALTER|DROP|COMMENT)\\b/i', $query) !== 1) {
+        if (preg_match('/\\b(CREATE|ALTER|DROP|COMMENT)\\b/i', $query) !== 1) {
             return;
         }
 
