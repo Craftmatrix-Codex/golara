@@ -328,11 +328,25 @@ class StudioController
             $statement = $pdo->query($statementQuery);
             if ($statement === false) return response()->json([]);
 
+            $this->refreshGraphQLSchemaVersion($pdo, $statementQuery);
             $rows = $statement->fetchAll();
             return response()->json($rows);
         } catch (PDOException|RuntimeException $exception) {
             report($exception);
             return response()->json(['error' => ['message' => 'Database metadata query failed']], 502);
+        }
+    }
+
+    private function refreshGraphQLSchemaVersion(PDO $pdo, string $query): void
+    {
+        if (preg_match('/^\\s*(CREATE|ALTER|DROP|COMMENT)\\b/i', $query) !== 1) {
+            return;
+        }
+
+        try {
+            $pdo->exec('SELECT graphql.increment_schema_version()');
+        } catch (PDOException) {
+            // Older PostgreSQL/pg_graphql installations may not expose the helper.
         }
     }
 
