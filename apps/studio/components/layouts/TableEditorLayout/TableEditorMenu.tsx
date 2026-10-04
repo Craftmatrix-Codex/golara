@@ -14,7 +14,7 @@ import {
 
 import { useTableEditorTabsCleanUp } from '../Tabs/Tabs.utils'
 import { EntityListItem } from './EntityListItem'
-import { getEntityNames } from './TableEditorMenu.utils'
+import { getEntityNames, getValidEntities } from './TableEditorMenu.utils'
 import { TableMenuEmptyState } from './TableMenuEmptyState'
 import { TableMenuFilterEmptyState } from './TableMenuFilterEmptyState'
 import { ExportDialog } from '@/components/grid/components/header/ExportDialog'
@@ -81,7 +81,7 @@ export const TableEditorMenu = () => {
   )
 
   const entityTypes = useMemo(
-    () => data?.pages.flatMap((page) => page.data.entities),
+    () => getValidEntities(data?.pages.flatMap((page) => page.data.entities)),
     [data?.pages]
   )
   const entityNames = useMemo(() => getEntityNames(entityTypes), [entityTypes])
