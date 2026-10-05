@@ -369,12 +369,43 @@ class StudioController
             if ($statement === false) return response()->json([]);
 
             $this->refreshGraphQLSchemaVersion($pdo, $statementQuery);
-            $rows = $statement->fetchAll();
+            $rows = $this->decodeMetadataJsonFields($statement->fetchAll());
             return response()->json($rows);
         } catch (PDOException|RuntimeException $exception) {
             report($exception);
             return response()->json(['error' => ['message' => 'Database metadata query failed']], 502);
         }
+    }
+
+    /** @param array<int, array<string, mixed>> $rows */
+    private function decodeMetadataJsonFields(array $rows): array
+    {
+        $fields = [
+            'columns',
+            'primary_keys',
+            'relationships',
+            'enums',
+            'constraints',
+            'indexes',
+            'policies',
+            'foreign_keys',
+            'data',
+        ];
+
+        foreach ($rows as &$row) {
+            foreach ($fields as $field) {
+                if (! array_key_exists($field, $row) || ! is_string($row[$field])) {
+                    continue;
+                }
+
+                $decoded = json_decode($row[$field], true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $row[$field] = $decoded;
+                }
+            }
+        }
+
+        return $rows;
     }
 
     private function refreshGraphQLSchemaVersion(PDO $pdo, string $query): void
