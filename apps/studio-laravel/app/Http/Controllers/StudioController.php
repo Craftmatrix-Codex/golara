@@ -392,14 +392,38 @@ class StudioController
                     continue;
                 }
 
-                $decoded = json_decode($row[$field], true);
-                if (json_last_error() === JSON_ERROR_NONE) {
+                $decoded = $this->decodeMetadataJsonValue($row[$field]);
+                if ($decoded !== null) {
                     $row[$field] = $decoded;
                 }
             }
         }
 
         return $rows;
+    }
+
+    private function decodeMetadataJsonValue(string $value): mixed
+    {
+        $decoded = json_decode($value, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $decoded;
+        }
+
+        if (! str_starts_with($value, '{') || ! str_ends_with($value, '}')) {
+            return null;
+        }
+
+        $items = str_getcsv(substr($value, 1, -1), ',', '"', '\\\\');
+        $decodedItems = [];
+        foreach ($items as $item) {
+            $decodedItem = json_decode($item, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return null;
+            }
+            $decodedItems[] = $decodedItem;
+        }
+
+        return $decodedItems;
     }
 
     private function refreshGraphQLSchemaVersion(PDO $pdo, string $query): void
