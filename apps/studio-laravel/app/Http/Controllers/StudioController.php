@@ -384,12 +384,6 @@ class StudioController
             'columns',
             'primary_keys',
             'relationships',
-            'enums',
-            'constraints',
-            'indexes',
-            'policies',
-            'foreign_keys',
-            'data',
         ];
 
         foreach ($rows as &$row) {
