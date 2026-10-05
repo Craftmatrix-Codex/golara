@@ -413,7 +413,7 @@ class StudioController
             return null;
         }
 
-        $items = str_getcsv(substr($value, 1, -1), ',', '"', '\\\\');
+        $items = str_getcsv(substr($value, 1, -1), ',', '"', '\\');
         $decodedItems = [];
         foreach ($items as $item) {
             $decodedItem = json_decode($item, true);
