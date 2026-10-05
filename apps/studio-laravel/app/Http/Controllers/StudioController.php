@@ -413,10 +413,19 @@ class StudioController
             return null;
         }
 
-        $items = str_getcsv(substr($value, 1, -1), ',', '"', '\\');
+        preg_match_all('/"((?:\\\\.|[^"\\\\])*)"/', substr($value, 1, -1), $matches);
+        if (($matches[1] ?? []) === []) {
+            return null;
+        }
+
         $decodedItems = [];
-        foreach ($items as $item) {
-            $decodedItem = json_decode($item, true);
+        foreach ($matches[1] as $encodedItem) {
+            $jsonItem = json_decode('"'.$encodedItem.'"', true);
+            if (! is_string($jsonItem)) {
+                return null;
+            }
+
+            $decodedItem = json_decode($jsonItem, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
                 return null;
             }
