@@ -52,7 +52,7 @@ RUN STUDIO_CLIENT_SOURCE=/tmp/studio-client ./scripts/sync-studio-client.sh
 
 FROM denoland/deno:2.5.3 AS deno-runtime
 
-FROM php:8.4-fpm-bookworm AS production
+FROM php:8.4.27-fpm-bookworm AS production
 RUN apt-get update -qq && \
     apt-get install -y --no-install-recommends nginx ca-certificates curl libonig-dev libpq-dev libsqlite3-dev && \
     docker-php-ext-install mbstring pdo_pgsql pdo_sqlite opcache && \
