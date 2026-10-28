@@ -1,10 +1,16 @@
 <?php
 
+use App\Http\Controllers\StudioAuthController;
 use App\Http\Controllers\StudioController;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', [StudioController::class, 'health']);
+
+Route::get('/sign-in', [StudioController::class, 'client']);
+Route::post('/api/studio-auth/login', [StudioAuthController::class, 'login'])
+    ->middleware('throttle:5,1');
+Route::post('/api/studio-auth/logout', [StudioAuthController::class, 'logout']);
 
 Route::middleware('studio.auth')
     ->withoutMiddleware([PreventRequestForgery::class])

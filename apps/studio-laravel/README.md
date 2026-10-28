@@ -28,7 +28,7 @@ The image build runs Go unit/race/vet/build gates and the Studio Vite build. The
 
 ## Authentication
 
-All Studio routes except `/health` require HTTP Basic Auth server-side. Set `STUDIO_AUTH_USERNAME` and `STUDIO_AUTH_PASSWORD` at runtime. Secrets are never returned by the project metadata adapters; API-key responses remain empty until project-scoped key storage is connected to the Go registry.
+Browser visits to Studio routes redirect to `/sign-in` when unauthenticated. The sign-in page verifies the deployment credentials configured by `STUDIO_AUTH_USERNAME` and `STUDIO_AUTH_PASSWORD`, then establishes a Laravel session. The production image uses encrypted cookie-backed sessions and file-backed cache for sign-in throttling; set a stable `APP_KEY` so sessions remain valid across container restarts. Session cookies are secure by default in production. Existing HTTP Basic Auth clients and the optional `SUPADATA_CONTROL_PLANE_TOKEN` bearer token remain supported for API access. Secrets are never returned by project metadata adapters; API-key responses remain empty until project-scoped key storage is connected to the Go registry.
 
 ## Current compatibility status
 

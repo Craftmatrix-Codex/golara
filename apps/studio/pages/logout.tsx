@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { LogoLoader } from 'ui'
 
 import { useSignOut } from '@/lib/auth'
+import { BASE_PATH, IS_PLATFORM } from '@/lib/constants'
 import type { NextPageWithLayout } from '@/types'
 
 const LogoutPage: NextPageWithLayout = () => {
@@ -12,7 +13,11 @@ const LogoutPage: NextPageWithLayout = () => {
 
   useEffect(() => {
     const logout = async () => {
-      await signOut()
+      if (IS_PLATFORM) {
+        await signOut()
+      } else {
+        await fetch(`${BASE_PATH}/api/studio-auth/logout`, { method: 'POST' })
+      }
       toast('Successfully logged out')
       await router.push('/sign-in')
     }

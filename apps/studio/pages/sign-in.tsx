@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Button } from 'ui'
 
+import { GoLaraSignInPage } from '@/components/interfaces/SignIn/GoLaraSignInPage'
 import { SignInForm } from '@/components/interfaces/SignIn/SignInForm'
 import { SignInOptions } from '@/components/interfaces/SignIn/SignInOptions'
 import { SignInWithExternalProvider } from '@/components/interfaces/SignIn/SignInWithExternalProvider'
@@ -17,6 +18,12 @@ import { getSignUpReturnTo } from '@/lib/gotrue'
 import type { NextPageWithLayout } from '@/types'
 
 const SignInPage: NextPageWithLayout = () => {
+  if (!IS_PLATFORM) return <GoLaraSignInPage />
+
+  return <PlatformSignInPage />
+}
+
+const PlatformSignInPage = () => {
   const router = useRouter()
   const [showOtherOptions, setShowOtherOptions] = useState(false)
 
@@ -41,13 +48,6 @@ const SignInPage: NextPageWithLayout = () => {
 
   const { focusProvider } = useInboundBranding('sign-in')
   const signInProviders = useEnabledIdentityProviders().filter((provider) => provider.showOnSignIn)
-
-  useEffect(() => {
-    if (!IS_PLATFORM) {
-      // on selfhosted instance just redirect to projects page
-      router.replace('/project/default')
-    }
-  }, [router])
 
   // Inbound link focused us on a single provider — lead with that one (SignInLayout renders the
   // matching interstitial frame around it), but let the user reveal the rest of our options.
@@ -111,14 +111,18 @@ const SignInPage: NextPageWithLayout = () => {
 
 SignInPage.getLayout = (page) => (
   <AuthenticationLayout>
-    <SignInLayout
-      heading="Welcome back"
-      subheading="Sign in to your account"
-      logoLinkToMarketingSite={true}
-      inboundFlow="sign-in"
-    >
-      {page}
-    </SignInLayout>
+    {IS_PLATFORM ? (
+      <SignInLayout
+        heading="Welcome back"
+        subheading="Sign in to your account"
+        logoLinkToMarketingSite={true}
+        inboundFlow="sign-in"
+      >
+        {page}
+      </SignInLayout>
+    ) : (
+      page
+    )}
   </AuthenticationLayout>
 )
 

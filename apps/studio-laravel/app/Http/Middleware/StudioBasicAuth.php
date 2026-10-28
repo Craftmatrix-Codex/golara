@@ -21,15 +21,23 @@ class StudioBasicAuth
             return $next($request);
         }
 
+        if ($request->session()->get('studio_authenticated') === true) {
+            return $next($request);
+        }
+
         $valid = $username !== ''
             && $password !== ''
             && hash_equals($username, $providedUsername)
             && hash_equals($password, $providedPassword);
 
         if (! $valid) {
-            return response('Authentication required', 401, [
-                'WWW-Authenticate' => 'Basic realm="Supadata Studio", charset="UTF-8"',
-            ]);
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json(['message' => 'Authentication required'], 401);
+            }
+
+            $returnTo = $request->getRequestUri();
+
+            return redirect('/sign-in?returnTo=' . rawurlencode($returnTo));
         }
 
         return $next($request);
