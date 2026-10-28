@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/golara-mascot.png" alt="GoLara mascot" width="520" />
+  <img src="assets/golara-space-engineer.png" alt="GoLara's space engineer mascot holding a diagnostic tablet" width="340" />
 </p>
 
 <h1 align="center">GoLara</h1>
