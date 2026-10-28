@@ -54,7 +54,7 @@ FROM denoland/deno:2.5.3 AS deno-runtime
 
 FROM php:8.4-fpm-bookworm AS production
 RUN apt-get update -qq && \
-    apt-get install -y --no-install-recommends nginx ca-certificates curl libonig-dev libpq-dev libsqlite3-dev && \
+    apt-get install -y --no-install-recommends nginx ca-certificates curl wget libonig-dev libpq-dev libsqlite3-dev && \
     docker-php-ext-install mbstring pdo_pgsql pdo_sqlite opcache && \
     rm -rf /var/lib/apt/lists/* && \
     printf '\n; Pass Coolify runtime variables through to Laravel workers.\nclear_env = no\n' >> /usr/local/etc/php-fpm.d/www.conf && \
