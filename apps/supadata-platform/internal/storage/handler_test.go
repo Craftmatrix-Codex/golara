@@ -156,7 +156,7 @@ func TestStorageListUsesPrefixLimitAndOffset(t *testing.T) {
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
 	}
-	if !strings.Contains(response.Body.String(), `"name":"images/b.txt"`) || strings.Contains(response.Body.String(), "images/a.txt") {
+	if !strings.Contains(response.Body.String(), `"name":"b.txt"`) || strings.Contains(response.Body.String(), `"name":"a.txt"`) {
 		t.Fatalf("unexpected list body = %s", response.Body.String())
 	}
 }

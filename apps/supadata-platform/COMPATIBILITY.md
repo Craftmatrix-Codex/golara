@@ -17,5 +17,11 @@ Status values are `NOT STARTED`, `PARTIAL`, or `PASS`. No feature is marked `PAS
 | Storage upload/download/list/delete | PARTIAL | API-key authorization, service/user mutation checks, path traversal rejection, size limits, S3-compatible SeaweedFS round-trip, handler tests, and Laravel project-scoped bucket metadata listing with native search/sort/pagination tests; bucket CRUD, signed URLs, policies, resumable uploads, database-backed bucket metadata, and exact Storage error parity remain unimplemented |
 | Database metadata/admin API | PARTIAL | Native empty pg-meta entity contract and OpenAPI schema are served; live schema introspection, SQL execution/history, migrations, and full admin parity remain unimplemented |
 | Edge functions | PARTIAL | Registry-backed function metadata contract is served and tested; deploy, invoke, logs, secrets, and runtime management remain unimplemented |
-| Supabase client compatibility | NOT STARTED | — |
+| Supabase client compatibility | PARTIAL | Official `@supabase/supabase-js` 2.118.0 contract package in `compat/`; 12 representative contracts pass against the local production runtime. Stable verification and broader behavioral coverage remain required. |
 | Single-image Docker deployment | PARTIAL | Unified Docker build, NGINX/PHP-FPM/Go startup, health, Basic Auth/CSRF boundary, and content round-trip pass locally; external Coolify exact-commit readback remains unavailable |
+
+## Versioned SDK evidence
+
+`compat/sdk-inventory.json` is generated from the pinned official SDK declarations and lists 223 public callable surfaces across 20 areas, including Auth passkeys/custom providers and alpha vector/analytics Storage APIs. It is an inventory of signatures, not a behavioral coverage percentage. Its unverified entries remain unverified until individual contract evidence is linked.
+
+The initial executable contracts cover invalid password handling, admin listing/signup/create/delete, password/session/refresh/logout, database CRUD/upsert/single/maybeSingle/HEAD count/range, RPC, singleton mutation rollback, anonymous database privilege rejection, Storage upload/list/download/remove, public Realtime channel lifecycle, and a deployed Deno function. Browser checks cover desktop/mobile sign-in, session-based Studio access, public project metadata, runtime failures, and public-origin destinations. See `compat/README.md` for target configuration and fixture setup.

@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"io"
+	"mime"
 	"net/http"
 	"strconv"
 	"strings"
@@ -108,7 +109,19 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		h.handleList(response, request, bucket)
 		return
 	}
-	public, bucket, key, err := parseObjectPath(path)
+	if request.Method == http.MethodDelete && !strings.Contains(path, "/") {
+		if validateBucket(path) != nil || validateProjectBucket(request.Context(), path) != nil {
+			writeJSON(response, http.StatusBadRequest, map[string]string{"error": "invalid bucket"})
+			return
+		}
+		if !h.hasAuthenticatedMutation(request, role) {
+			writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "authentication required"})
+			return
+		}
+		h.handleRemove(response, request, path)
+		return
+	}
+	_, bucket, key, err := parseObjectPath(path)
 	if err != nil {
 		writeJSON(response, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
@@ -117,7 +130,7 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		writeJSON(response, http.StatusNotFound, map[string]string{"error": "object not found"})
 		return
 	}
-	if !public && request.Method != http.MethodGet && !h.hasAuthenticatedMutation(request, role) {
+	if request.Method != http.MethodGet && !h.hasAuthenticatedMutation(request, role) {
 		writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "authentication required"})
 		return
 	}
@@ -145,15 +158,42 @@ func validateProjectBucket(ctx context.Context, bucket string) error {
 }
 
 func (h *Handler) handlePut(response http.ResponseWriter, request *http.Request, bucket, key string) {
-	if request.ContentLength > h.maxObjectSize {
+	contentType := request.Header.Get("Content-Type")
+	mediaType, _, _ := mime.ParseMediaType(contentType)
+	isMultipart := mediaType == "multipart/form-data"
+	if !isMultipart && request.ContentLength > h.maxObjectSize {
 		writeJSON(response, http.StatusRequestEntityTooLarge, map[string]string{"error": "object too large"})
 		return
 	}
 	body := io.Reader(request.Body)
-	if request.ContentLength < 0 {
-		body = &maxSizeReader{reader: request.Body, remaining: h.maxObjectSize}
+	size := request.ContentLength
+	if isMultipart {
+		request.Body = http.MaxBytesReader(response, request.Body, h.maxObjectSize+(1<<20))
+		reader, err := request.MultipartReader()
+		if err != nil {
+			writeJSON(response, http.StatusBadRequest, map[string]string{"error": "invalid multipart upload"})
+			return
+		}
+		for {
+			part, err := reader.NextPart()
+			if err != nil {
+				writeJSON(response, http.StatusBadRequest, map[string]string{"error": "multipart file is required"})
+				return
+			}
+			if part.FileName() != "" {
+				defer part.Close()
+				body = part
+				contentType = part.Header.Get("Content-Type")
+				size = -1
+				break
+			}
+			_ = part.Close()
+		}
 	}
-	info, err := h.store.Put(request.Context(), bucket, key, request.Header.Get("Content-Type"), body, request.ContentLength)
+	if size < 0 {
+		body = &maxSizeReader{reader: body, remaining: h.maxObjectSize}
+	}
+	info, err := h.store.Put(request.Context(), bucket, key, contentType, body, size)
 	if err != nil {
 		if errors.Is(err, ErrObjectTooLarge) {
 			_ = h.store.Delete(request.Context(), bucket, key)
@@ -223,6 +263,40 @@ func (h *Handler) handleDelete(response http.ResponseWriter, request *http.Reque
 	writeJSON(response, http.StatusOK, map[string]string{"message": "Successfully deleted"})
 }
 
+func (h *Handler) handleRemove(response http.ResponseWriter, request *http.Request, bucket string) {
+	var body struct {
+		Prefixes []string `json:"prefixes"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(response, request.Body, 1<<20)).Decode(&body); err != nil || len(body.Prefixes) == 0 || len(body.Prefixes) > 1000 {
+		writeJSON(response, http.StatusBadRequest, map[string]string{"error": "invalid removal paths"})
+		return
+	}
+	for _, key := range body.Prefixes {
+		if validateObjectPath(key, false) != nil {
+			writeJSON(response, http.StatusBadRequest, map[string]string{"error": "invalid object path"})
+			return
+		}
+	}
+	removed := make([]ObjectInfo, 0, len(body.Prefixes))
+	for _, key := range body.Prefixes {
+		object, err := h.store.Get(request.Context(), bucket, key)
+		if errors.Is(err, ErrObjectNotFound) {
+			continue
+		}
+		if err != nil {
+			writeStoreError(response, err)
+			return
+		}
+		_ = object.Body.Close()
+		if err := h.store.Delete(request.Context(), bucket, key); err != nil {
+			writeStoreError(response, err)
+			return
+		}
+		removed = append(removed, object.ObjectInfo)
+	}
+	writeJSON(response, http.StatusOK, removed)
+}
+
 func (h *Handler) handleList(response http.ResponseWriter, request *http.Request, bucket string) {
 	if err := validateBucket(bucket); err != nil {
 		writeJSON(response, http.StatusBadRequest, map[string]string{"error": err.Error()})
@@ -249,10 +323,17 @@ func (h *Handler) handleList(response http.ResponseWriter, request *http.Request
 	if body.Offset < 0 {
 		body.Offset = 0
 	}
-	items, err := h.store.List(request.Context(), bucket, body.Prefix, body.Limit, body.Offset)
+	prefix := strings.TrimSuffix(body.Prefix, "/")
+	if prefix != "" {
+		prefix += "/"
+	}
+	items, err := h.store.List(request.Context(), bucket, prefix, body.Limit, body.Offset)
 	if err != nil {
 		writeStoreError(response, err)
 		return
+	}
+	for index := range items {
+		items[index].Key = strings.TrimPrefix(items[index].Key, prefix)
 	}
 	writeJSON(response, http.StatusOK, items)
 }
@@ -267,7 +348,15 @@ func (h *Handler) hasAuthenticatedMutation(request *http.Request, role string) b
 	}
 	accessToken := strings.TrimPrefix(authorization, "Bearer ")
 	claims, err := jwt.VerifyHS256(accessToken, h.jwtSecret, jwt.ValidationOptions{Now: time.Now(), Issuer: h.issuer, Audience: h.audience})
-	return err == nil && claims.Role != "service_role"
+	if err != nil || claims.Role != "authenticated" || claims.Subject == "" {
+		return false
+	}
+	if scope, ok := project.ScopeFromContext(request.Context()); ok {
+		if claims.ProjectID != scope.ID && !(claims.ProjectID == "" && scope.ID == "default") {
+			return false
+		}
+	}
+	return true
 }
 
 func (h *Handler) apiKeyRole(provided string) string {

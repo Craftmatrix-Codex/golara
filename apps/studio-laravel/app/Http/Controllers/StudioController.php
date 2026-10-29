@@ -965,7 +965,7 @@ class StudioController
                 'ref' => $id,
                 'name' => is_string($project['name'] ?? null) ? $project['name'] : $id,
                 'organization_id' => 1,
-                'cloud_provider' => 'localhost',
+                'cloud_provider' => 'self-hosted',
                 'status' => $this->nativeProjectStatus($project['status'] ?? null),
                 'region' => 'local',
                 'inserted_at' => $project['createdAt'] ?? '',

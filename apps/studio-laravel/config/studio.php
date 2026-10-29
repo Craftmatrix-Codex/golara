@@ -19,7 +19,7 @@ return [
             'ref' => 'default',
             'name' => 'Default Project',
             'organization_id' => 1,
-            'cloud_provider' => 'localhost',
+            'cloud_provider' => 'self-hosted',
             'status' => 'ACTIVE_HEALTHY',
             'region' => 'local',
             'inserted_at' => '2021-08-02T06:40:40.646Z',

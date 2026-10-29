@@ -7,7 +7,8 @@ FROM golang:1.22-bookworm AS go-build
 WORKDIR /src/apps/supadata-platform
 COPY apps/supadata-platform/go.mod apps/supadata-platform/go.sum ./
 RUN GOTOOLCHAIN=local go mod download
-COPY apps/supadata-platform/ ./
+COPY apps/supadata-platform/cmd/ ./cmd/
+COPY apps/supadata-platform/internal/ ./internal/
 RUN GOTOOLCHAIN=local go test ./... && \
     GOTOOLCHAIN=local go test -race ./... && \
     GOTOOLCHAIN=local go vet ./... && \
@@ -74,7 +75,7 @@ ENV APP_ENV=production
 ENV APP_DEBUG=false
 ENV APP_URL=http://localhost
 ENV LOG_CHANNEL=stderr
-ENV SESSION_DRIVER=cookie
+ENV SESSION_DRIVER=file
 ENV CACHE_STORE=file
 ENV QUEUE_CONNECTION=sync
 ENV SUPADATA_DATA_DIR=/var/lib/supadata

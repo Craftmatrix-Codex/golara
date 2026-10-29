@@ -7,7 +7,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -51,7 +53,7 @@ func NewHandler(database *sql.DB, options HandlerOptions) *Handler {
 }
 
 func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
-	if request.Method != http.MethodGet && request.Method != http.MethodPost && request.Method != http.MethodPatch && request.Method != http.MethodDelete {
+	if request.Method != http.MethodGet && request.Method != http.MethodHead && request.Method != http.MethodPost && request.Method != http.MethodPatch && request.Method != http.MethodDelete {
 		writeJSON(response, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 		return
 	}
@@ -94,13 +96,36 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		writeJSON(response, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
-	result, err := h.queryRows(request.Context(), claims, query)
+	if request.Method == http.MethodHead {
+		h.handleHead(response, request, claims, schema, path)
+		return
+	}
+	result, err := h.queryRows(request.Context(), claims, query, wantsSingular(request))
 	if err != nil {
-		writeJSON(response, http.StatusInternalServerError, map[string]string{"error": "database query failed"})
+		writeQueryError(response, err, "database query failed")
 		return
 	}
 	response.Header().Set("Content-Range", contentRange(len(result)))
-	writeJSON(response, http.StatusOK, result)
+	if strings.Contains(request.Header.Get("Prefer"), "count=") {
+		countQuery, err := BuildCountQuery(schema, path, request.URL.Query())
+		if err != nil {
+			writeJSON(response, http.StatusBadRequest, map[string]string{"error": "invalid count request"})
+			return
+		}
+		counts, err := h.queryRows(request.Context(), claims, countQuery, false)
+		if err != nil || len(counts) != 1 {
+			writeJSON(response, http.StatusInternalServerError, map[string]string{"error": "count query failed"})
+			return
+		}
+		total := fmt.Sprint(counts[0]["count"])
+		rangeValue := "*/" + total
+		if len(result) > 0 {
+			offset, _ := strconv.Atoi(request.URL.Query().Get("offset"))
+			rangeValue = strconv.Itoa(offset) + "-" + strconv.Itoa(offset+len(result)-1) + "/" + total
+		}
+		response.Header().Set("Content-Range", rangeValue)
+	}
+	writeRESTResult(response, request, http.StatusOK, result)
 }
 
 func (h *Handler) handleRPC(response http.ResponseWriter, request *http.Request, claims jwt.Claims) {
@@ -128,12 +153,12 @@ func (h *Handler) handleRPC(response http.ResponseWriter, request *http.Request,
 		writeJSON(response, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
-	result, err := h.queryRows(request.Context(), claims, query)
+	result, err := h.queryRows(request.Context(), claims, query, wantsSingular(request))
 	if err != nil {
-		writeJSON(response, http.StatusInternalServerError, map[string]string{"error": "RPC execution failed"})
+		writeQueryError(response, err, "RPC execution failed")
 		return
 	}
-	writeJSON(response, http.StatusOK, result)
+	writeRESTResult(response, request, http.StatusOK, result)
 }
 
 func (h *Handler) databaseForContext(ctx context.Context) *sql.DB {
@@ -143,20 +168,11 @@ func (h *Handler) databaseForContext(ctx context.Context) *sql.DB {
 	return h.database
 }
 
-func (h *Handler) queryRows(ctx context.Context, claims jwt.Claims, query Query) ([]map[string]any, error) {
+func (h *Handler) queryRows(ctx context.Context, claims jwt.Claims, query Query, singular bool) ([]map[string]any, error) {
 	databaseConnection := h.databaseForContext(ctx)
 	if databaseConnection == nil {
 		return nil, errors.New("database unavailable")
 	}
-	if claims.Subject == "" {
-		rows, err := databaseConnection.QueryContext(ctx, query.SQL, query.Args...)
-		if err != nil {
-			return nil, err
-		}
-		defer rows.Close()
-		return rowsToJSON(rows)
-	}
-
 	tx, err := databaseConnection.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -211,6 +227,9 @@ func (h *Handler) queryRows(ctx context.Context, claims jwt.Claims, query Query)
 	if err != nil {
 		return nil, err
 	}
+	if singular && len(result) != 1 {
+		return nil, &singularResultError{Count: len(result)}
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -250,13 +269,13 @@ func (h *Handler) handleMutation(response http.ResponseWriter, request *http.Req
 		writeJSON(response, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
-	result, err := h.queryRows(request.Context(), claims, query)
+	result, err := h.queryRows(request.Context(), claims, query, wantsSingular(request))
 	if err != nil {
-		writeJSON(response, http.StatusInternalServerError, map[string]string{"error": "database mutation failed"})
+		writeQueryError(response, err, "database mutation failed")
 		return
 	}
 	if strings.Contains(request.Header.Get("Prefer"), "return=representation") {
-		writeJSON(response, http.StatusOK, result)
+		writeRESTResult(response, request, http.StatusOK, result)
 		return
 	}
 	response.WriteHeader(http.StatusNoContent)
@@ -308,13 +327,13 @@ func (h *Handler) handleInsert(response http.ResponseWriter, request *http.Reque
 		writeJSON(response, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
-	result, err := h.queryRows(request.Context(), claims, query)
+	result, err := h.queryRows(request.Context(), claims, query, wantsSingular(request))
 	if err != nil {
-		writeJSON(response, http.StatusInternalServerError, map[string]string{"error": "database insert failed"})
+		writeQueryError(response, err, "database insert failed")
 		return
 	}
 	if strings.Contains(request.Header.Get("Prefer"), "return=representation") {
-		writeJSON(response, http.StatusCreated, result)
+		writeRESTResult(response, request, http.StatusCreated, result)
 		return
 	}
 	response.WriteHeader(http.StatusCreated)
@@ -327,6 +346,9 @@ func (h *Handler) accessClaims(request *http.Request) (jwt.Claims, error) {
 	}
 	authorization := request.Header.Get("Authorization")
 	if authorization == "" {
+		return jwt.Claims{Role: role, Audience: h.audience}, nil
+	}
+	if strings.HasPrefix(authorization, "Bearer ") && h.apiKeyRole(strings.TrimSpace(strings.TrimPrefix(authorization, "Bearer "))) == role {
 		return jwt.Claims{Role: role, Audience: h.audience}, nil
 	}
 	if !strings.HasPrefix(authorization, "Bearer ") || len(h.jwtSecret) == 0 {
@@ -410,6 +432,85 @@ func normalizeValue(value any) any {
 		return json.RawMessage(bytes)
 	}
 	return string(bytes)
+}
+
+type singularResultError struct{ Count int }
+
+func (e *singularResultError) Error() string { return "result is not singular" }
+
+func wantsSingular(request *http.Request) bool {
+	return strings.Contains(request.Header.Get("Accept"), "application/vnd.pgrst.object+json")
+}
+
+func writeQueryError(response http.ResponseWriter, err error, fallback string) {
+	var singular *singularResultError
+	if errors.As(err, &singular) {
+		writeJSON(response, http.StatusNotAcceptable, map[string]any{"code": "PGRST116", "message": "Cannot coerce the result to a single JSON object", "details": fmt.Sprintf("The result contains %d rows", singular.Count), "hint": nil})
+		return
+	}
+	writeJSON(response, http.StatusInternalServerError, map[string]string{"error": fallback})
+}
+
+func (h *Handler) handleHead(response http.ResponseWriter, request *http.Request, claims jwt.Claims, schema, table string) {
+	query, err := BuildCountQuery(schema, table, request.URL.Query())
+	if err != nil {
+		writeQueryError(response, err, "invalid count request")
+		return
+	}
+	counts, err := h.queryRows(request.Context(), claims, query, false)
+	if err != nil || len(counts) != 1 {
+		writeQueryError(response, err, "count query failed")
+		return
+	}
+	total, err := strconv.Atoi(fmt.Sprint(counts[0]["count"]))
+	if err != nil || total < 0 {
+		writeQueryError(response, err, "invalid count result")
+		return
+	}
+	offset, _ := strconv.Atoi(request.URL.Query().Get("offset"))
+	selected := total - offset
+	if selected < 0 {
+		selected = 0
+	}
+	if raw := request.URL.Query().Get("limit"); raw != "" {
+		limit, _ := strconv.Atoi(raw)
+		if limit < selected {
+			selected = limit
+		}
+	}
+	denominator := "*"
+	if strings.Contains(request.Header.Get("Prefer"), "count=") {
+		denominator = strconv.Itoa(total)
+	}
+	rangeValue := "*/" + denominator
+	if selected > 0 {
+		rangeValue = strconv.Itoa(offset) + "-" + strconv.Itoa(offset+selected-1) + "/" + denominator
+	}
+	response.Header().Set("Content-Range", rangeValue)
+	if wantsSingular(request) && selected != 1 {
+		writeQueryError(response, &singularResultError{Count: selected}, "result is not singular")
+		return
+	}
+	response.Header().Set("Content-Type", "application/json")
+	response.WriteHeader(http.StatusOK)
+}
+
+func writeRESTResult(response http.ResponseWriter, request *http.Request, status int, result []map[string]any) {
+	var payload any = result
+	contentType := "application/json"
+	if strings.Contains(request.Header.Get("Accept"), "application/vnd.pgrst.object+json") {
+		if len(result) != 1 {
+			writeJSON(response, http.StatusNotAcceptable, map[string]any{"code": "PGRST116", "message": "Cannot coerce the result to a single JSON object", "details": fmt.Sprintf("The result contains %d rows", len(result)), "hint": nil})
+			return
+		}
+		payload = result[0]
+		contentType = "application/vnd.pgrst.object+json"
+	}
+	response.Header().Set("Content-Type", contentType)
+	response.WriteHeader(status)
+	if request.Method != http.MethodHead {
+		_ = json.NewEncoder(response).Encode(payload)
+	}
 }
 
 func contentRange(count int) string {

@@ -26,8 +26,8 @@ func TestAuthAdminDeleteUserRequiresServiceRole(t *testing.T) {
 	response := httptest.NewRecorder()
 
 	server.Handler().ServeHTTP(response, request)
-	if response.Code != http.StatusNoContent {
-		t.Fatalf("status = %d, want 204: %s", response.Code, response.Body.String())
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200: %s", response.Code, response.Body.String())
 	}
 	if authService.deletedID != "user-1" {
 		t.Fatalf("deleted id = %q, want user-1", authService.deletedID)

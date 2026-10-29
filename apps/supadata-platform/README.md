@@ -33,7 +33,7 @@ The public application is deployed separately for each branch:
 - **Canary**: `https://go-alpha.craftmatrix.org`
 - **Stable**: `https://golara.craftmatrix.org`
 
-Canary is the validation environment. Stable is updated only through an explicit promotion.
+The current user-approved validation program operates directly on Stable. Live write tests use the dedicated `golara_sdk_` fixture namespace and preserve the previous healthy deployment for rollback. Coolify is managed at `https://dev.craftmatrix.org`.
 
 ## Supabase-compatible routes
 
@@ -160,14 +160,14 @@ The production Dockerfile also runs the Go test, race, vet, and build checks bef
 
 ## Deployment workflow
 
-1. Develop and validate on `canary`.
-2. Push the Canary commit.
-3. Deploy the Canary Coolify application.
+1. Develop and validate locally, including the official SDK contracts and the actual browser UI.
+2. Push the verified `stable` commit using the authorized GitHub identity.
+3. Deploy the Stable GoLara Coolify application.
 4. Verify the exact deployment commit, container health, and public HTTPS route.
 5. Exercise authenticated and unauthenticated API boundaries.
 6. Test the requested feature through the real Studio/client path.
-7. Fast-forward `canary` into `stable` only after Canary acceptance passes.
-8. Deploy Stable explicitly and repeat the live verification.
+7. Patch each failure locally, rerun the affected and regression checks, and repeat Stable deployment and readback.
+8. Record the exact revision, SDK version, evidence, and remaining compatibility gaps before marking a feature complete.
 
 A Git merge is not a deployment. A healthy container is not proof that the requested route or database feature works; both require public readback.
 

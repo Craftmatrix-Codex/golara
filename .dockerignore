@@ -24,6 +24,8 @@ tests
 !docker/.env.example
 **/dist
 **/vendor
+**/.superpowers
+output/playwright
 **/bootstrap/cache/*.php
 
 .dockerignore

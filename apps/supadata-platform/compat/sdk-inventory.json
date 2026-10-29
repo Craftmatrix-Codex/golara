@@ -1,0 +1,1346 @@
+{
+  "sdk": "@supabase/supabase-js",
+  "version": "2.118.0",
+  "generatedBy": "node inventory.mjs",
+  "note": "Public callable surfaces from the pinned SDK declarations. Method coverage alone does not establish behavioral parity. Status is UNVERIFIED until linked to local and live contract evidence.",
+  "capabilities": [
+    {
+      "id": "auth.dispose",
+      "surface": "auth",
+      "method": "dispose",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.exchangeCodeForSession",
+      "surface": "auth",
+      "method": "exchangeCodeForSession",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.getClaims",
+      "surface": "auth",
+      "method": "getClaims",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.getSession",
+      "surface": "auth",
+      "method": "getSession",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.getUser",
+      "surface": "auth",
+      "method": "getUser",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.getUserIdentities",
+      "surface": "auth",
+      "method": "getUserIdentities",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.initialize",
+      "surface": "auth",
+      "method": "initialize",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.isThrowOnErrorEnabled",
+      "surface": "auth",
+      "method": "isThrowOnErrorEnabled",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.linkIdentity",
+      "surface": "auth",
+      "method": "linkIdentity",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.onAuthStateChange",
+      "surface": "auth",
+      "method": "onAuthStateChange",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.reauthenticate",
+      "surface": "auth",
+      "method": "reauthenticate",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.refreshSession",
+      "surface": "auth",
+      "method": "refreshSession",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.registerPasskey",
+      "surface": "auth",
+      "method": "registerPasskey",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.resend",
+      "surface": "auth",
+      "method": "resend",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.resetPasswordForEmail",
+      "surface": "auth",
+      "method": "resetPasswordForEmail",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.setSession",
+      "surface": "auth",
+      "method": "setSession",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.signInAnonymously",
+      "surface": "auth",
+      "method": "signInAnonymously",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.signInWithIdToken",
+      "surface": "auth",
+      "method": "signInWithIdToken",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.signInWithOAuth",
+      "surface": "auth",
+      "method": "signInWithOAuth",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.signInWithOtp",
+      "surface": "auth",
+      "method": "signInWithOtp",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.signInWithPasskey",
+      "surface": "auth",
+      "method": "signInWithPasskey",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.signInWithPassword",
+      "surface": "auth",
+      "method": "signInWithPassword",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.signInWithSSO",
+      "surface": "auth",
+      "method": "signInWithSSO",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.signInWithWeb3",
+      "surface": "auth",
+      "method": "signInWithWeb3",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.signOut",
+      "surface": "auth",
+      "method": "signOut",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.signUp",
+      "surface": "auth",
+      "method": "signUp",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.startAutoRefresh",
+      "surface": "auth",
+      "method": "startAutoRefresh",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.stopAutoRefresh",
+      "surface": "auth",
+      "method": "stopAutoRefresh",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.unlinkIdentity",
+      "surface": "auth",
+      "method": "unlinkIdentity",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.updateUser",
+      "surface": "auth",
+      "method": "updateUser",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "auth.verifyOtp",
+      "surface": "auth",
+      "method": "verifyOtp",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdmin.createUser",
+      "surface": "authAdmin",
+      "method": "createUser",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdmin.deleteUser",
+      "surface": "authAdmin",
+      "method": "deleteUser",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdmin.generateLink",
+      "surface": "authAdmin",
+      "method": "generateLink",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdmin.getUserById",
+      "surface": "authAdmin",
+      "method": "getUserById",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdmin.inviteUserByEmail",
+      "surface": "authAdmin",
+      "method": "inviteUserByEmail",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdmin.listUsers",
+      "surface": "authAdmin",
+      "method": "listUsers",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdmin.signOut",
+      "surface": "authAdmin",
+      "method": "signOut",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdmin.updateUserById",
+      "surface": "authAdmin",
+      "method": "updateUserById",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdminCustomProviders.createProvider",
+      "surface": "authAdminCustomProviders",
+      "method": "createProvider",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdminCustomProviders.deleteProvider",
+      "surface": "authAdminCustomProviders",
+      "method": "deleteProvider",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdminCustomProviders.getProvider",
+      "surface": "authAdminCustomProviders",
+      "method": "getProvider",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdminCustomProviders.listProviders",
+      "surface": "authAdminCustomProviders",
+      "method": "listProviders",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdminCustomProviders.updateProvider",
+      "surface": "authAdminCustomProviders",
+      "method": "updateProvider",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdminMFA.deleteFactor",
+      "surface": "authAdminMFA",
+      "method": "deleteFactor",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdminMFA.listFactors",
+      "surface": "authAdminMFA",
+      "method": "listFactors",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdminOAuth.createClient",
+      "surface": "authAdminOAuth",
+      "method": "createClient",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdminOAuth.deleteClient",
+      "surface": "authAdminOAuth",
+      "method": "deleteClient",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdminOAuth.getClient",
+      "surface": "authAdminOAuth",
+      "method": "getClient",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdminOAuth.listClients",
+      "surface": "authAdminOAuth",
+      "method": "listClients",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdminOAuth.regenerateClientSecret",
+      "surface": "authAdminOAuth",
+      "method": "regenerateClientSecret",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdminOAuth.updateClient",
+      "surface": "authAdminOAuth",
+      "method": "updateClient",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdminPasskey.deletePasskey",
+      "surface": "authAdminPasskey",
+      "method": "deletePasskey",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authAdminPasskey.listPasskeys",
+      "surface": "authAdminPasskey",
+      "method": "listPasskeys",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authMFA.challenge",
+      "surface": "authMFA",
+      "method": "challenge",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authMFA.challengeAndVerify",
+      "surface": "authMFA",
+      "method": "challengeAndVerify",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authMFA.enroll",
+      "surface": "authMFA",
+      "method": "enroll",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authMFA.getAuthenticatorAssuranceLevel",
+      "surface": "authMFA",
+      "method": "getAuthenticatorAssuranceLevel",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authMFA.listFactors",
+      "surface": "authMFA",
+      "method": "listFactors",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authMFA.unenroll",
+      "surface": "authMFA",
+      "method": "unenroll",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authMFA.verify",
+      "surface": "authMFA",
+      "method": "verify",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authOAuth.approveAuthorization",
+      "surface": "authOAuth",
+      "method": "approveAuthorization",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authOAuth.denyAuthorization",
+      "surface": "authOAuth",
+      "method": "denyAuthorization",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authOAuth.getAuthorizationDetails",
+      "surface": "authOAuth",
+      "method": "getAuthorizationDetails",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authOAuth.listGrants",
+      "surface": "authOAuth",
+      "method": "listGrants",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "authOAuth.revokeGrant",
+      "surface": "authOAuth",
+      "method": "revokeGrant",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "client.channel",
+      "surface": "client",
+      "method": "channel",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "client.from",
+      "surface": "client",
+      "method": "from",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "client.getChannels",
+      "surface": "client",
+      "method": "getChannels",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "client.getOpenApiSpec",
+      "surface": "client",
+      "method": "getOpenApiSpec",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "client.removeAllChannels",
+      "surface": "client",
+      "method": "removeAllChannels",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "client.removeChannel",
+      "surface": "client",
+      "method": "removeChannel",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "client.rpc",
+      "surface": "client",
+      "method": "rpc",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "client.schema",
+      "surface": "client",
+      "method": "schema",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "database.delete",
+      "surface": "database",
+      "method": "delete",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "database.insert",
+      "surface": "database",
+      "method": "insert",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "database.select",
+      "surface": "database",
+      "method": "select",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "database.update",
+      "surface": "database",
+      "method": "update",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "database.upsert",
+      "surface": "database",
+      "method": "upsert",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.abortSignal",
+      "surface": "databaseQuery",
+      "method": "abortSignal",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.containedBy",
+      "surface": "databaseQuery",
+      "method": "containedBy",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.contains",
+      "surface": "databaseQuery",
+      "method": "contains",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.csv",
+      "surface": "databaseQuery",
+      "method": "csv",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.eq",
+      "surface": "databaseQuery",
+      "method": "eq",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.explain",
+      "surface": "databaseQuery",
+      "method": "explain",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.filter",
+      "surface": "databaseQuery",
+      "method": "filter",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.geojson",
+      "surface": "databaseQuery",
+      "method": "geojson",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.gt",
+      "surface": "databaseQuery",
+      "method": "gt",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.gte",
+      "surface": "databaseQuery",
+      "method": "gte",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.ilike",
+      "surface": "databaseQuery",
+      "method": "ilike",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.ilikeAllOf",
+      "surface": "databaseQuery",
+      "method": "ilikeAllOf",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.ilikeAnyOf",
+      "surface": "databaseQuery",
+      "method": "ilikeAnyOf",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.in",
+      "surface": "databaseQuery",
+      "method": "in",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.is",
+      "surface": "databaseQuery",
+      "method": "is",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.isDistinct",
+      "surface": "databaseQuery",
+      "method": "isDistinct",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.like",
+      "surface": "databaseQuery",
+      "method": "like",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.likeAllOf",
+      "surface": "databaseQuery",
+      "method": "likeAllOf",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.likeAnyOf",
+      "surface": "databaseQuery",
+      "method": "likeAnyOf",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.limit",
+      "surface": "databaseQuery",
+      "method": "limit",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.lt",
+      "surface": "databaseQuery",
+      "method": "lt",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.lte",
+      "surface": "databaseQuery",
+      "method": "lte",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.match",
+      "surface": "databaseQuery",
+      "method": "match",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.maxAffected",
+      "surface": "databaseQuery",
+      "method": "maxAffected",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.maybeSingle",
+      "surface": "databaseQuery",
+      "method": "maybeSingle",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.neq",
+      "surface": "databaseQuery",
+      "method": "neq",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.not",
+      "surface": "databaseQuery",
+      "method": "not",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.notIn",
+      "surface": "databaseQuery",
+      "method": "notIn",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.or",
+      "surface": "databaseQuery",
+      "method": "or",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.order",
+      "surface": "databaseQuery",
+      "method": "order",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.overlaps",
+      "surface": "databaseQuery",
+      "method": "overlaps",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.overrideTypes",
+      "surface": "databaseQuery",
+      "method": "overrideTypes",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.range",
+      "surface": "databaseQuery",
+      "method": "range",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.rangeAdjacent",
+      "surface": "databaseQuery",
+      "method": "rangeAdjacent",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.rangeGt",
+      "surface": "databaseQuery",
+      "method": "rangeGt",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.rangeGte",
+      "surface": "databaseQuery",
+      "method": "rangeGte",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.rangeLt",
+      "surface": "databaseQuery",
+      "method": "rangeLt",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.rangeLte",
+      "surface": "databaseQuery",
+      "method": "rangeLte",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.regexIMatch",
+      "surface": "databaseQuery",
+      "method": "regexIMatch",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.regexMatch",
+      "surface": "databaseQuery",
+      "method": "regexMatch",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.retry",
+      "surface": "databaseQuery",
+      "method": "retry",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.returns",
+      "surface": "databaseQuery",
+      "method": "returns",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.rollback",
+      "surface": "databaseQuery",
+      "method": "rollback",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.select",
+      "surface": "databaseQuery",
+      "method": "select",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.setHeader",
+      "surface": "databaseQuery",
+      "method": "setHeader",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.single",
+      "surface": "databaseQuery",
+      "method": "single",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.stripNulls",
+      "surface": "databaseQuery",
+      "method": "stripNulls",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.textSearch",
+      "surface": "databaseQuery",
+      "method": "textSearch",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.then",
+      "surface": "databaseQuery",
+      "method": "then",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "databaseQuery.throwOnError",
+      "surface": "databaseQuery",
+      "method": "throwOnError",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "functions.invoke",
+      "surface": "functions",
+      "method": "invoke",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "functions.setAuth",
+      "surface": "functions",
+      "method": "setAuth",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.channel",
+      "surface": "realtime",
+      "method": "channel",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.connect",
+      "surface": "realtime",
+      "method": "connect",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.connectionState",
+      "surface": "realtime",
+      "method": "connectionState",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.decode",
+      "surface": "realtime",
+      "method": "decode",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.disconnect",
+      "surface": "realtime",
+      "method": "disconnect",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.encode",
+      "surface": "realtime",
+      "method": "encode",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.endpointURL",
+      "surface": "realtime",
+      "method": "endpointURL",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.fetch",
+      "surface": "realtime",
+      "method": "fetch",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.getChannels",
+      "surface": "realtime",
+      "method": "getChannels",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.hasLogger",
+      "surface": "realtime",
+      "method": "hasLogger",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.heartbeatCallback",
+      "surface": "realtime",
+      "method": "heartbeatCallback",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.isConnected",
+      "surface": "realtime",
+      "method": "isConnected",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.isConnecting",
+      "surface": "realtime",
+      "method": "isConnecting",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.isDisconnecting",
+      "surface": "realtime",
+      "method": "isDisconnecting",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.log",
+      "surface": "realtime",
+      "method": "log",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.onHeartbeat",
+      "surface": "realtime",
+      "method": "onHeartbeat",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.push",
+      "surface": "realtime",
+      "method": "push",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.reconnectAfterMs",
+      "surface": "realtime",
+      "method": "reconnectAfterMs",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.removeAllChannels",
+      "surface": "realtime",
+      "method": "removeAllChannels",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.removeChannel",
+      "surface": "realtime",
+      "method": "removeChannel",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.sendHeartbeat",
+      "surface": "realtime",
+      "method": "sendHeartbeat",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtime.setAuth",
+      "surface": "realtime",
+      "method": "setAuth",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtimeChannel.copyBindings",
+      "surface": "realtimeChannel",
+      "method": "copyBindings",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtimeChannel.httpSend",
+      "surface": "realtimeChannel",
+      "method": "httpSend",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtimeChannel.on",
+      "surface": "realtimeChannel",
+      "method": "on",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtimeChannel.presenceState",
+      "surface": "realtimeChannel",
+      "method": "presenceState",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtimeChannel.send",
+      "surface": "realtimeChannel",
+      "method": "send",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtimeChannel.subscribe",
+      "surface": "realtimeChannel",
+      "method": "subscribe",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtimeChannel.teardown",
+      "surface": "realtimeChannel",
+      "method": "teardown",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtimeChannel.track",
+      "surface": "realtimeChannel",
+      "method": "track",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtimeChannel.unsubscribe",
+      "surface": "realtimeChannel",
+      "method": "unsubscribe",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtimeChannel.untrack",
+      "surface": "realtimeChannel",
+      "method": "untrack",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "realtimeChannel.updateJoinPayload",
+      "surface": "realtimeChannel",
+      "method": "updateJoinPayload",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storage.createBucket",
+      "surface": "storage",
+      "method": "createBucket",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storage.deleteBucket",
+      "surface": "storage",
+      "method": "deleteBucket",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storage.deleteBucketLifecycle",
+      "surface": "storage",
+      "method": "deleteBucketLifecycle",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storage.emptyBucket",
+      "surface": "storage",
+      "method": "emptyBucket",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storage.from",
+      "surface": "storage",
+      "method": "from",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storage.getBucket",
+      "surface": "storage",
+      "method": "getBucket",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storage.getBucketLifecycle",
+      "surface": "storage",
+      "method": "getBucketLifecycle",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storage.listBuckets",
+      "surface": "storage",
+      "method": "listBuckets",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storage.purgeBucketCache",
+      "surface": "storage",
+      "method": "purgeBucketCache",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storage.setHeader",
+      "surface": "storage",
+      "method": "setHeader",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storage.throwOnError",
+      "surface": "storage",
+      "method": "throwOnError",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storage.updateBucket",
+      "surface": "storage",
+      "method": "updateBucket",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storage.updateBucketLifecycle",
+      "surface": "storage",
+      "method": "updateBucketLifecycle",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageAnalytics.createBucket",
+      "surface": "storageAnalytics",
+      "method": "createBucket",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageAnalytics.deleteBucket",
+      "surface": "storageAnalytics",
+      "method": "deleteBucket",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageAnalytics.from",
+      "surface": "storageAnalytics",
+      "method": "from",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageAnalytics.listBuckets",
+      "surface": "storageAnalytics",
+      "method": "listBuckets",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageAnalytics.setHeader",
+      "surface": "storageAnalytics",
+      "method": "setHeader",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageAnalytics.throwOnError",
+      "surface": "storageAnalytics",
+      "method": "throwOnError",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.copy",
+      "surface": "storageFiles",
+      "method": "copy",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.createSignedUploadUrl",
+      "surface": "storageFiles",
+      "method": "createSignedUploadUrl",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.createSignedUrl",
+      "surface": "storageFiles",
+      "method": "createSignedUrl",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.createSignedUrls",
+      "surface": "storageFiles",
+      "method": "createSignedUrls",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.download",
+      "surface": "storageFiles",
+      "method": "download",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.exists",
+      "surface": "storageFiles",
+      "method": "exists",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.getPublicUrl",
+      "surface": "storageFiles",
+      "method": "getPublicUrl",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.info",
+      "surface": "storageFiles",
+      "method": "info",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.list",
+      "surface": "storageFiles",
+      "method": "list",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.listV2",
+      "surface": "storageFiles",
+      "method": "listV2",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.move",
+      "surface": "storageFiles",
+      "method": "move",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.purgeCache",
+      "surface": "storageFiles",
+      "method": "purgeCache",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.remove",
+      "surface": "storageFiles",
+      "method": "remove",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.setHeader",
+      "surface": "storageFiles",
+      "method": "setHeader",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.throwOnError",
+      "surface": "storageFiles",
+      "method": "throwOnError",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.toBase64",
+      "surface": "storageFiles",
+      "method": "toBase64",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.update",
+      "surface": "storageFiles",
+      "method": "update",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.upload",
+      "surface": "storageFiles",
+      "method": "upload",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageFiles.uploadToSignedUrl",
+      "surface": "storageFiles",
+      "method": "uploadToSignedUrl",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectorBucket.createIndex",
+      "surface": "storageVectorBucket",
+      "method": "createIndex",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectorBucket.deleteIndex",
+      "surface": "storageVectorBucket",
+      "method": "deleteIndex",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectorBucket.getIndex",
+      "surface": "storageVectorBucket",
+      "method": "getIndex",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectorBucket.index",
+      "surface": "storageVectorBucket",
+      "method": "index",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectorBucket.listIndexes",
+      "surface": "storageVectorBucket",
+      "method": "listIndexes",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectorBucket.setHeader",
+      "surface": "storageVectorBucket",
+      "method": "setHeader",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectorBucket.throwOnError",
+      "surface": "storageVectorBucket",
+      "method": "throwOnError",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectorIndex.deleteVectors",
+      "surface": "storageVectorIndex",
+      "method": "deleteVectors",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectorIndex.getVectors",
+      "surface": "storageVectorIndex",
+      "method": "getVectors",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectorIndex.listVectors",
+      "surface": "storageVectorIndex",
+      "method": "listVectors",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectorIndex.putVectors",
+      "surface": "storageVectorIndex",
+      "method": "putVectors",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectorIndex.queryVectors",
+      "surface": "storageVectorIndex",
+      "method": "queryVectors",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectorIndex.setHeader",
+      "surface": "storageVectorIndex",
+      "method": "setHeader",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectorIndex.throwOnError",
+      "surface": "storageVectorIndex",
+      "method": "throwOnError",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectors.createBucket",
+      "surface": "storageVectors",
+      "method": "createBucket",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectors.deleteBucket",
+      "surface": "storageVectors",
+      "method": "deleteBucket",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectors.from",
+      "surface": "storageVectors",
+      "method": "from",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectors.getBucket",
+      "surface": "storageVectors",
+      "method": "getBucket",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectors.listBuckets",
+      "surface": "storageVectors",
+      "method": "listBuckets",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectors.setHeader",
+      "surface": "storageVectors",
+      "method": "setHeader",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "storageVectors.throwOnError",
+      "surface": "storageVectors",
+      "method": "throwOnError",
+      "status": "UNVERIFIED"
+    }
+  ]
+}

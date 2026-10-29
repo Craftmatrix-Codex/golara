@@ -180,6 +180,9 @@ func (h *Handler) accessClaims(request *http.Request, apiKeyRole string) (platfo
 	if authorization == "" {
 		return platformjwt.Claims{Role: apiKeyRole, Audience: h.audience}, nil
 	}
+	if strings.HasPrefix(authorization, "Bearer ") && h.apiKeyRole(strings.TrimSpace(strings.TrimPrefix(authorization, "Bearer "))) == apiKeyRole {
+		return platformjwt.Claims{Role: apiKeyRole, Audience: h.audience}, nil
+	}
 	if !strings.HasPrefix(authorization, "Bearer ") || len(h.jwtSecret) == 0 {
 		return platformjwt.Claims{}, errors.New("invalid access token")
 	}

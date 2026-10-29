@@ -15,6 +15,21 @@ type Query struct {
 	Args []any
 }
 
+func BuildCountQuery(schema, table string, values url.Values) (Query, error) {
+	filters := make(url.Values)
+	for key, entries := range values {
+		if key != "select" && key != "limit" && key != "offset" && key != "order" {
+			filters[key] = append([]string(nil), entries...)
+		}
+	}
+	query, err := BuildSelectQuery(schema, table, filters)
+	if err != nil {
+		return Query{}, err
+	}
+	query.SQL = `SELECT COUNT(*) AS "count" FROM (` + query.SQL + `) AS "golara_count"`
+	return query, nil
+}
+
 func BuildSelectQuery(schema, table string, values url.Values) (Query, error) {
 	if !validIdentifier(schema) || !validIdentifier(table) {
 		return Query{}, errors.New("invalid table identifier")

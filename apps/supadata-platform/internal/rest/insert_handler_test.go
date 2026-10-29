@@ -16,11 +16,13 @@ func TestPOSTTableInsertsObjectAndReturnsRepresentation(t *testing.T) {
 		t.Fatalf("sqlmock.New() error = %v", err)
 	}
 	defer database.Close()
+	expectRoleTransaction(mock, "anon")
 	query := `INSERT INTO "public"."todos" ("id", "title") VALUES ($1, $2) RETURNING *`
 	mock.ExpectQuery(regexp.QuoteMeta(query)).WithArgs(float64(42), "Fix auth").WillReturnRows(
 		sqlmock.NewRows([]string{"id", "title"}).AddRow(42, "Fix auth"),
 	)
 
+	mock.ExpectCommit()
 	handler := NewHandler(database, HandlerOptions{APIKeys: APIKeyConfig{Anon: "anon-key"}})
 	request := httptest.NewRequest(http.MethodPost, "/rest/v1/todos", strings.NewReader(`{"id":42,"title":"Fix auth"}`))
 	request.Header.Set("apikey", "anon-key")

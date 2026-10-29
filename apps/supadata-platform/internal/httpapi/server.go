@@ -61,6 +61,10 @@ type AdminUserDeleteService interface {
 	DeleteUser(context.Context, string) error
 }
 
+type AdminUserCreateService interface {
+	AdminCreateUser(context.Context, string, string, map[string]any, bool) (auth.User, error)
+}
+
 type APIKeyConfig struct {
 	Anon        string
 	ServiceRole string
@@ -117,7 +121,8 @@ func (s *Server) Handler() http.Handler {
 
 func (s *Server) serveHTTP(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Access-Control-Allow-Headers", "content-type, authorization, apikey, x-client-info, x-graphql-authorization")
-	response.Header().Set("Access-Control-Allow-Methods", "DELETE,GET,OPTIONS,POST,PATCH,PUT")
+	response.Header().Set("Access-Control-Allow-Methods", "DELETE,GET,HEAD,OPTIONS,POST,PATCH,PUT")
+	response.Header().Set("Access-Control-Expose-Headers", "Content-Range, Range-Unit")
 	response.Header().Set("Access-Control-Allow-Origin", s.allowedOrigin)
 
 	if request.Method == http.MethodOptions {
@@ -234,6 +239,34 @@ func (s *Server) serveHTTP(response http.ResponseWriter, request *http.Request) 
 		writeJSON(response, http.StatusNoContent, nil)
 		return
 	}
+	if request.Method == http.MethodPost && request.URL.Path == "/auth/v1/admin/users" {
+		if !s.isServiceRoleRequest(request) {
+			writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+			return
+		}
+		creator, ok := s.auth.(AdminUserCreateService)
+		if !ok {
+			writeJSON(response, http.StatusServiceUnavailable, map[string]string{"error": "auth storage unavailable"})
+			return
+		}
+		var body struct {
+			Email        string         `json:"email"`
+			Password     string         `json:"password"`
+			EmailConfirm bool           `json:"email_confirm"`
+			Metadata     map[string]any `json:"user_metadata"`
+		}
+		if err := json.NewDecoder(http.MaxBytesReader(response, request.Body, 1<<20)).Decode(&body); err != nil {
+			writeJSON(response, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+			return
+		}
+		user, err := creator.AdminCreateUser(request.Context(), body.Email, body.Password, body.Metadata, body.EmailConfirm)
+		if err != nil {
+			writeJSON(response, http.StatusBadRequest, map[string]string{"error": "could not create user"})
+			return
+		}
+		writeJSON(response, http.StatusOK, user)
+		return
+	}
 	if request.Method == http.MethodGet && request.URL.Path == "/auth/v1/admin/users" {
 		if !s.isServiceRoleRequest(request) {
 			writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
@@ -276,7 +309,7 @@ func (s *Server) serveHTTP(response http.ResponseWriter, request *http.Request) 
 			writeJSON(response, http.StatusNotFound, map[string]string{"error": "user not found"})
 			return
 		}
-		writeJSON(response, http.StatusNoContent, nil)
+		writeJSON(response, http.StatusOK, map[string]string{"id": userID})
 		return
 	}
 	if request.Method == http.MethodGet && request.URL.Path == "/auth/v1/settings" {
@@ -602,6 +635,11 @@ func (s *Server) handleToken(response http.ResponseWriter, request *http.Request
 	}
 	result, err := s.auth.SignIn(request.Context(), body.Email, body.Password)
 	if err != nil {
+		if errors.Is(err, auth.ErrEmailNotConfirmed) {
+			response.Header().Set("X-Supabase-Api-Version", "2024-01-01")
+			writeJSON(response, http.StatusBadRequest, map[string]string{"code": "email_not_confirmed", "msg": err.Error()})
+			return
+		}
 		writeJSON(response, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}

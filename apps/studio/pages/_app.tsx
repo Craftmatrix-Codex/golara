@@ -45,6 +45,7 @@ import { FeaturePreviewModal } from '@/components/interfaces/App/FeaturePreview/
 import { IndirectTaxDeclarationModal } from '@/components/interfaces/App/IndirectTaxDeclarationModal'
 import { MonacoThemeProvider } from '@/components/interfaces/App/MonacoThemeProvider'
 import { RouteValidationWrapper } from '@/components/interfaces/App/RouteValidationWrapper'
+import { GoLaraSignInPage } from '@/components/interfaces/SignIn/GoLaraSignInPage'
 import { MainScrollContainerProvider } from '@/components/layouts/MainScrollContainerContext'
 import { BannerStackProvider } from '@/components/ui/BannerStack/BannerStackProvider'
 import { GlobalErrorBoundaryState } from '@/components/ui/ErrorBoundary/GlobalErrorBoundaryState'
@@ -134,7 +135,22 @@ configureMonacoLoader()
 // debugging way too difficult. Ideal scenario is we just have one AppLayout to control the height and scroll areas of
 // the dashboard, all other layout components should not be doing that
 
-function CustomApp({ Component, pageProps }: AppPropsWithLayout) {
+function CustomApp(props: AppPropsWithLayout) {
+  if (!IS_PLATFORM && props.router.pathname === '/sign-in') {
+    return (
+      <ThemeProvider defaultTheme="system" themes={['dark', 'light', 'classic-dark']} enableSystem>
+        <Head>
+          <title>GoLara</title>
+        </Head>
+        <GoLaraSignInPage />
+      </ThemeProvider>
+    )
+  }
+
+  return <StudioApp {...props} />
+}
+
+function StudioApp({ Component, pageProps }: AppPropsWithLayout) {
   const queryClient = useRootQueryClient()
   const { appTitle } = useCustomContent(['app:title'])
   const [isCLI, setIsCLI] = useState(false)

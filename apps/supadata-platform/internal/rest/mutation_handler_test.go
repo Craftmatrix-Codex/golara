@@ -16,11 +16,13 @@ func TestPATCHTableUpdatesOnlyFilteredRows(t *testing.T) {
 		t.Fatalf("sqlmock.New() error = %v", err)
 	}
 	defer database.Close()
+	expectRoleTransaction(mock, "anon")
 	query := `UPDATE "public"."todos" SET "title" = $1 WHERE "id" = $2 RETURNING *`
 	mock.ExpectQuery(regexp.QuoteMeta(query)).WithArgs("Fixed", "42").WillReturnRows(
 		sqlmock.NewRows([]string{"id", "title"}).AddRow(42, "Fixed"),
 	)
 
+	mock.ExpectCommit()
 	handler := NewHandler(database, HandlerOptions{APIKeys: APIKeyConfig{Anon: "anon-key"}})
 	request := httptest.NewRequest(http.MethodPatch, "/rest/v1/todos?id=eq.42", strings.NewReader(`{"title":"Fixed"}`))
 	request.Header.Set("apikey", "anon-key")

@@ -15,11 +15,13 @@ func TestGETTableUsesPostgRESTPathAndReturnsRows(t *testing.T) {
 		t.Fatalf("sqlmock.New() error = %v", err)
 	}
 	defer database.Close()
+	expectRoleTransaction(mock, "anon")
 	query := `SELECT "id", "title" FROM "public"."todos" WHERE "id" = $1 LIMIT 10`
 	mock.ExpectQuery(regexp.QuoteMeta(query)).WithArgs("42").WillReturnRows(
 		sqlmock.NewRows([]string{"id", "title"}).AddRow(42, "Fix auth"),
 	)
 
+	mock.ExpectCommit()
 	handler := NewHandler(database, HandlerOptions{APIKeys: APIKeyConfig{Anon: "anon-key"}})
 	request := httptest.NewRequest(http.MethodGet, "/rest/v1/todos?select=id,title&id=eq.42&limit=10", nil)
 	request.Header.Set("apikey", "anon-key")

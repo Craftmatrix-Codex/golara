@@ -21,6 +21,7 @@ var (
 	ErrUserAlreadyRegistered = errors.New("user already registered")
 	ErrInvalidCredentials    = errors.New("invalid login credentials")
 	ErrInvalidRefreshToken   = errors.New("invalid refresh token")
+	ErrEmailNotConfirmed     = errors.New("Email not confirmed")
 )
 
 type User struct {
@@ -158,7 +159,22 @@ func (s *Service) SignIn(ctx context.Context, email, password string) (SessionRe
 	if err := VerifyPassword(passwordHash, password); err != nil {
 		return SessionResponse{}, ErrInvalidCredentials
 	}
+	if user.EmailConfirmedAt == nil {
+		return SessionResponse{}, ErrEmailNotConfirmed
+	}
 	return s.issueSession(ctx, user)
+}
+
+func (s *Service) AdminCreateUser(ctx context.Context, email, password string, metadata map[string]any, confirmed bool) (User, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
+	if email == "" || !strings.Contains(email, "@") {
+		return User{}, errors.New("invalid email")
+	}
+	hash, err := HashPassword(password)
+	if err != nil {
+		return User{}, err
+	}
+	return s.repository.CreateUser(ctx, email, hash, metadata, confirmed)
 }
 
 func (s *Service) Refresh(ctx context.Context, refreshToken string) (SessionResponse, error) {

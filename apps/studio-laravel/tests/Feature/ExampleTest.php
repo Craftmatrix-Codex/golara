@@ -9,7 +9,7 @@ class ExampleTest extends TestCase
 {
     public function test_the_studio_shell_requires_authentication(): void
     {
-        $this->get('/')->assertUnauthorized();
+        $this->get('/')->assertRedirect('/sign-in?returnTo=%2F');
         $this->withBasicAuth('studio', 'password')->get('/')->assertOk();
     }
 

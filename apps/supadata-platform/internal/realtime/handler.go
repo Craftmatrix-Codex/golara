@@ -137,7 +137,12 @@ func (h *Handler) handleMessage(ctx context.Context, client *realtimeClient, mes
 	case event == "heartbeat" && topic == "phoenix":
 		return client.writeReply(joinReference, reference, topic, "ok", map[string]any{})
 	case event == "phx_join":
-		if !strings.HasPrefix(topic, "realtime:public:") || strings.TrimPrefix(topic, "realtime:public:") == "" {
+		var join struct {
+			Config struct {
+				Private bool `json:"private"`
+			} `json:"config"`
+		}
+		if json.Unmarshal(message[4], &join) != nil || join.Config.Private || !strings.HasPrefix(topic, "realtime:") || strings.TrimPrefix(topic, "realtime:") == "" || strings.HasPrefix(topic, "realtime:private:") {
 			return client.writeReply(joinReference, reference, topic, "error", map[string]string{"reason": "unauthorized topic"})
 		}
 		topicKey := ProjectTopicKey(ctx, topic)

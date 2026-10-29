@@ -30,6 +30,7 @@ import {
   Outlet,
   redirect,
   Scripts,
+  useRouterState,
   type AnyRouter,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
@@ -67,6 +68,7 @@ import { FeaturePreviewModal } from '@/components/interfaces/App/FeaturePreview/
 import { IndirectTaxDeclarationModal } from '@/components/interfaces/App/IndirectTaxDeclarationModal'
 import { RouteValidationWrapper } from '@/components/interfaces/App/RouteValidationWrapper'
 import { ShellFallback } from '@/components/interfaces/App/ShellFallback'
+import { GoLaraSignInPage } from '@/components/interfaces/SignIn/GoLaraSignInPage'
 import { MainScrollContainerProvider } from '@/components/layouts/MainScrollContainerContext'
 import { BannerStackProvider } from '@/components/ui/BannerStack/BannerStackProvider'
 import { GlobalErrorBoundaryState } from '@/components/ui/ErrorBoundary/GlobalErrorBoundaryState'
@@ -362,6 +364,22 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 })
 
 function RootComponent() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
+
+  if (!IS_PLATFORM && pathname.replace(/\/$/, '') === `${BASE_PATH}/sign-in`) {
+    return (
+      <ThemeProvider defaultTheme="system" themes={['dark', 'light', 'classic-dark']} enableSystem>
+        <ClientOnly fallback={<ShellFallback />}>
+          <GoLaraSignInPage />
+        </ClientOnly>
+      </ThemeProvider>
+    )
+  }
+
+  return <StudioRootComponent />
+}
+
+function StudioRootComponent() {
   useThemeSandbox()
 
   return (

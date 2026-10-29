@@ -16,7 +16,9 @@ func TestRPCRouteExecutesNamedFunctionQuery(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer database.Close()
+	expectRoleTransaction(mock, "anon")
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "public"."add_todo"("title" := $1)`)).WithArgs("Fix auth").WillReturnRows(sqlmock.NewRows([]string{"result"}).AddRow("ok"))
+	mock.ExpectCommit()
 	handler := NewHandler(database, HandlerOptions{APIKeys: APIKeyConfig{Anon: "anon-key"}})
 	request := httptest.NewRequest(http.MethodPost, "/rest/v1/rpc/add_todo", strings.NewReader(`{"title":"Fix auth"}`))
 	request.Header.Set("apikey", "anon-key")
