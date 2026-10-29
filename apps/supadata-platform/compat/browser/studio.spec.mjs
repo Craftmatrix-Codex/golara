@@ -16,7 +16,7 @@ for (const viewport of [
     await page.setViewportSize(viewport)
     const errors = []
     const localRequests = []
-    page.on('pageerror', (error) => errors.push(error.message))
+    page.on('pageerror', (error) => errors.push(error.stack || error.message))
     page.on('request', (request) => {
       if (!local && /localhost|127\.0\.0\.1|0\.0\.0\.0/.test(request.url()))
         localRequests.push(request.url())
@@ -44,7 +44,7 @@ test('browser sign-in opens the real Studio; protected responses use public conf
   const errors = []
   const failedResponses = []
   const localRequests = []
-  page.on('pageerror', (error) => errors.push(error.message))
+  page.on('pageerror', (error) => errors.push(error.stack || error.message))
   page.on('response', (response) => {
     if (response.status() >= 400 && !response.url().includes('/api/telemetry'))
       failedResponses.push(`${response.status()} ${new URL(response.url()).pathname}`)
@@ -223,7 +223,7 @@ test.describe('Studio feature navigation', () => {
         if (response.status() >= 400 && !response.url().includes('/api/telemetry'))
           failures.push(`${response.status()} ${new URL(response.url()).pathname}`)
       })
-      page.on('pageerror', (error) => errors.push(error.message))
+      page.on('pageerror', (error) => errors.push(error.stack || error.message))
       page.on('request', (request) => {
         if (!local && /localhost|127\.0\.0\.1|0\.0\.0\.0/.test(request.url()))
           loopback.push(request.url())

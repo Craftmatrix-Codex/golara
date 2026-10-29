@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "test:sdk": "node --test --test-concurrency=1 suites/*.test.mjs",
+    "test:sdk": "node --test --test-reporter=tap --test-concurrency=1 suites/*.test.mjs",
     "test:browser": "playwright test --config=playwright.config.mjs",
     "test:recreate": "node recreate-local.mjs",
     "bench:local": "node bench-local.mjs",
