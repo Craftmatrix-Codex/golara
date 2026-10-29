@@ -284,7 +284,7 @@ func (s *Service) GetUserByAccessToken(ctx context.Context, accessToken string) 
 }
 
 func validateProjectClaims(ctx context.Context, claims jwt.Claims) error {
-	if scope, ok := project.ScopeFromContext(ctx); ok && claims.ProjectID != "" && claims.ProjectID != scope.ID {
+	if scope, ok := project.ScopeFromContext(ctx); ok && claims.ProjectID != scope.ID && !(claims.ProjectID == "" && scope.ID == "default") {
 		return errors.New("project token mismatch")
 	}
 	return nil

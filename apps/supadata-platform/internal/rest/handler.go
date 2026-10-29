@@ -331,7 +331,7 @@ func (h *Handler) accessClaims(request *http.Request) (jwt.Claims, error) {
 	if err != nil {
 		return jwt.Claims{}, err
 	}
-	if scope, ok := project.ScopeFromContext(request.Context()); ok && claims.ProjectID != "" && claims.ProjectID != scope.ID {
+	if scope, ok := project.ScopeFromContext(request.Context()); ok && claims.ProjectID != scope.ID && !(claims.ProjectID == "" && scope.ID == "default") {
 		return jwt.Claims{}, errors.New("project token mismatch")
 	}
 	if role != "service_role" && claims.Role == "service_role" {

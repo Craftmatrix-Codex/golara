@@ -95,6 +95,10 @@ export const LocalDropdown = ({
             ))}
           </DropdownMenuRadioGroup>
         </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="cursor-pointer" onSelect={() => router.push('/logout')}>
+          Sign out
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

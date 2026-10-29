@@ -46,7 +46,7 @@ func TestGETWithProjectScopeInstallsProjectClaim(t *testing.T) {
 		t.Fatalf("sqlmock.New() error = %v", err)
 	}
 	defer database.Close()
-	accessToken, err := jwt.SignHS256(jwt.Claims{Subject: "user-id", Role: "authenticated", ExpiresAt: 1_900_000_000}, []byte("jwt-secret"))
+	accessToken, err := jwt.SignHS256(jwt.Claims{ProjectID: "alpha", Subject: "user-id", Role: "authenticated", ExpiresAt: 1_900_000_000}, []byte("jwt-secret"))
 	if err != nil {
 		t.Fatalf("SignHS256() error = %v", err)
 	}

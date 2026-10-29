@@ -81,8 +81,20 @@ test('SDK Auth admin creates a confirmed user; password, getUser, refresh, and s
     const refresh = await client.auth.refreshSession()
     assert.equal(refresh.error, null)
     assert.notEqual(refresh.data.session.refresh_token, login.data.session.refresh_token)
+    const replay = await sdkClient(cfg).auth.refreshSession({
+      refresh_token: login.data.session.refresh_token,
+    })
+    assert.ok(replay.error, 'A rotated refresh token must not be reusable')
+    assert.equal(replay.data.session, null)
     assert.equal((await client.auth.signOut()).error, null)
     assert.equal((await client.auth.getSession()).data.session, null)
+    const revokedUser = await sdkClient(cfg).auth.getUser(refresh.data.session.access_token)
+    assert.ok(revokedUser.error, 'A revoked session must fail server-side user lookup')
+    const revokedRefresh = await sdkClient(cfg).auth.refreshSession({
+      refresh_token: refresh.data.session.refresh_token,
+    })
+    assert.ok(revokedRefresh.error, 'A revoked session must not refresh')
+    assert.equal(revokedRefresh.data.session, null)
   } finally {
     assert.equal((await admin.auth.admin.deleteUser(user.id)).error, null)
   }

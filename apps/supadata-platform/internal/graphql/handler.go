@@ -171,7 +171,7 @@ func (h *Handler) accessClaims(request *http.Request, apiKeyRole string) (platfo
 	if err != nil {
 		return platformjwt.Claims{}, err
 	}
-	if scope, ok := project.ScopeFromContext(request.Context()); ok && claims.ProjectID != "" && claims.ProjectID != scope.ID {
+	if scope, ok := project.ScopeFromContext(request.Context()); ok && claims.ProjectID != scope.ID && !(claims.ProjectID == "" && scope.ID == "default") {
 		return platformjwt.Claims{}, errors.New("project token mismatch")
 	}
 	if apiKeyRole != "service_role" && claims.Role == "service_role" {

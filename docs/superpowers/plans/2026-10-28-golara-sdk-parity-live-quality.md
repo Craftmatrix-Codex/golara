@@ -4,6 +4,8 @@
 
 **Execution override (2026-10-28):** The user approved starting the entire plan directly on Stable. All live validation targets `https://golara.craftmatrix.org`, deployed through `https://dev.craftmatrix.org`; Canary references below describe the original proposal and are superseded. Use uniquely named disposable test resources within Stable, preserve application data, and verify rollback. Execute inline in the current checkout; Stable deployment and necessary pushes are authorized.
 
+**Scope update (2026-10-29):** The user explicitly deferred email delivery, SMS, and OAuth testing/configuration. Continue all independent SDK, database, Storage, Realtime, Functions, Studio, isolation, and performance work on Stable. Deferred provider-dependent checks remain unverified.
+
 **Goal:** Make GoLara reliably usable through the pinned official Supabase JavaScript SDK, prove the real Studio and public API behavior locally and on a live Canary, and optimize measured workloads against a fair Supabase baseline before promoting accepted changes to Stable.
 
 **Architecture:** Keep the existing Go data plane, Laravel Studio/control plane, NGINX routing, and PostgreSQL authority. Build an SDK-versioned capability matrix and black-box contract suites, run them against deterministic local fixtures and an isolated live Canary, patch failures and rerun affected gates, then promote only accepted revisions to Stable. Treat Auth, PostgREST/RPC, Realtime, Storage, Functions, GraphQL, and Studio/control-plane behavior as separate compatibility areas with explicit prerequisites and evidence.
