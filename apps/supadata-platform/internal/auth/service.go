@@ -220,8 +220,20 @@ func (s *Service) ListUsers(ctx context.Context, page, perPage int) ([]User, int
 }
 
 func (s *Service) DeleteUser(ctx context.Context, userID string) error {
+	return s.DeleteUserWithOptions(ctx, userID, false)
+}
+
+func (s *Service) DeleteUserWithOptions(ctx context.Context, userID string, soft bool) error {
 	if strings.TrimSpace(userID) == "" {
 		return ErrUserNotFound
+	}
+	if repository, ok := s.repository.(interface {
+		DeleteUserWithOptions(context.Context, string, bool) error
+	}); ok {
+		return repository.DeleteUserWithOptions(ctx, userID, soft)
+	}
+	if soft {
+		return errors.New("soft user deletion is not configured")
 	}
 	adminRepository, ok := s.repository.(AdminUserRepository)
 	if !ok {

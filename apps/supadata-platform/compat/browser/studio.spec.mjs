@@ -1,6 +1,7 @@
+import { randomUUID } from 'node:crypto'
 import { expect, test } from '@playwright/test'
 
-import { loadConfig } from '../config.mjs'
+import { disposeClients, loadConfig, sdkClient } from '../config.mjs'
 
 const cfg = loadConfig()
 const local = new URL(cfg.publicURL).protocol === 'http:'
@@ -91,6 +92,25 @@ test('browser sign-in opens the real Studio; protected responses use public conf
   expect((await page.request.get('/api/platform/projects')).status()).toBe(401)
 })
 
+test('mobile Studio exposes Settings and signs out through its menu', async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/sign-in')
+  await page.getByLabel('Email or username', { exact: true }).fill(cfg.studioUsername)
+  await page.getByLabel('Password', { exact: true }).fill(cfg.studioPassword)
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await expect(page).toHaveURL(/\/project\/default/)
+  await expect(page.getByRole('heading', { name: 'Default Project', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  await expect(page.getByRole('menuitem', { name: 'Sign out', exact: true })).toBeVisible()
+  await page.screenshot({ path: testInfo.outputPath('studio-mobile-settings.png'), fullPage: true })
+  await page.getByRole('menuitem', { name: 'Sign out', exact: true }).click()
+  await expect(page).toHaveURL(/\/sign-in$/)
+  await expect(page.getByRole('heading', { name: 'Sign in to GoLara' })).toBeVisible()
+  expect((await page.request.get('/api/platform/projects')).status()).toBe(401)
+})
+
 test('failed Studio logout offers retry and preserves authenticated access', async ({ page }) => {
   await page.goto('/sign-in')
   await page.getByLabel('Email or username', { exact: true }).fill(cfg.studioUsername)
@@ -111,6 +131,45 @@ test('failed Studio logout offers retry and preserves authenticated access', asy
   await page.getByRole('button', { name: 'Try again', exact: true }).click()
   await expect(page).toHaveURL(/\/sign-in$/)
   expect((await page.request.get('/api/platform/projects')).status()).toBe(401)
+})
+
+test('Studio Authentication lists a user created through the official SDK', async ({ page }) => {
+  const admin = sdkClient(cfg, 'service')
+  const email = `golara-sdk-browser-${randomUUID()}@example.invalid`
+  let userID
+  try {
+    const created = await admin.auth.admin.createUser({
+      email,
+      password: `Sdk-${randomUUID()}!`,
+      email_confirm: true,
+      user_metadata: { fixture: cfg.namespace },
+    })
+    expect(created.error).toBeNull()
+    userID = created.data.user.id
+    await page.goto('/sign-in')
+    await page.getByLabel('Email or username', { exact: true }).fill(cfg.studioUsername)
+    await page.getByLabel('Password', { exact: true }).fill(cfg.studioPassword)
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await expect(page).toHaveURL(/\/project\/default/)
+    await page.goto('/project/default/auth/users')
+    await page.getByRole('textbox', { name: 'Search by email', exact: true }).fill(email)
+    await page.getByRole('textbox', { name: 'Search by email', exact: true }).press('Enter')
+    await expect(page.getByText(email, { exact: true }).first()).toBeVisible()
+    expect((await admin.auth.admin.deleteUser(userID)).error).toBeNull()
+    userID = undefined
+    const refreshed = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        response.url().includes('/pg-meta/') &&
+        (response.request().postData() ?? '').includes(email)
+    )
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click()
+    expect((await refreshed).status()).toBe(200)
+    await expect(page.getByText(email, { exact: true })).toHaveCount(0)
+  } finally {
+    if (userID) expect((await admin.auth.admin.deleteUser(userID)).error).toBeNull()
+    await disposeClients()
+  }
 })
 
 // Exercise real application pages beyond the sign-in/landing shell.
@@ -161,7 +220,12 @@ test.describe('Studio feature navigation', () => {
       try {
         expect((await page.goto(`/project/default/${path}`)).status()).toBe(200)
         await expect(page.getByRole('heading', { name, exact: true }).first()).toBeVisible()
-        await page.waitForLoadState('networkidle')
+        if (name === 'Logs') {
+          await expect(page.getByRole('textbox', { name: 'Editor content' })).toBeVisible()
+          await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeEnabled()
+        } else {
+          await page.waitForLoadState('networkidle')
+        }
         expect(failures).toEqual([])
         expect(errors).toEqual([])
         expect(loopback).toEqual([])

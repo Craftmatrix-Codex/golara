@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -305,7 +306,36 @@ func (s *Server) serveHTTP(response http.ResponseWriter, request *http.Request) 
 			writeJSON(response, http.StatusBadRequest, map[string]string{"error": "invalid user id"})
 			return
 		}
-		if err := deleteService.DeleteUser(request.Context(), userID); err != nil {
+		var body struct {
+			Soft bool `json:"should_soft_delete"`
+		}
+		if request.Body != nil {
+			decoder := json.NewDecoder(http.MaxBytesReader(response, request.Body, 1<<20))
+			err := decoder.Decode(&body)
+			if err != nil && !errors.Is(err, io.EOF) {
+				writeJSON(response, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+				return
+			}
+			if err == nil {
+				var trailing any
+				if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+					writeJSON(response, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+					return
+				}
+			}
+		}
+		var deleteErr error
+		if optionsService, ok := s.auth.(interface {
+			DeleteUserWithOptions(context.Context, string, bool) error
+		}); ok {
+			deleteErr = optionsService.DeleteUserWithOptions(request.Context(), userID, body.Soft)
+		} else if body.Soft {
+			writeJSON(response, http.StatusNotImplemented, map[string]string{"error": "soft deletion unavailable"})
+			return
+		} else {
+			deleteErr = deleteService.DeleteUser(request.Context(), userID)
+		}
+		if deleteErr != nil {
 			writeJSON(response, http.StatusNotFound, map[string]string{"error": "user not found"})
 			return
 		}

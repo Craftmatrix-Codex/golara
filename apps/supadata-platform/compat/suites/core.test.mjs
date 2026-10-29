@@ -131,6 +131,63 @@ test('SDK database insert/select/update/upsert/delete returns real fixture rows'
   }
 })
 
+test('SDK database combines filters, quoted IN values, and repeated ordering', async () => {
+  const rows = [
+    { marker: `${marker}-filters,one`, name: 'Alpha first', quantity: 31 },
+    { marker: `${marker}-filters-two`, name: 'Alpha second', quantity: 32 },
+    { marker: `${marker}-filters-three`, name: 'blocked', quantity: 33 },
+    { marker: `${marker}-filters-a`, name: 'Alpha tie', quantity: 32 },
+  ]
+  const markers = rows.map((row) => row.marker)
+  try {
+    assert.equal((await admin.from(cfg.namespace).insert(rows)).error, null)
+    const quoted = await admin.from(cfg.namespace).select('marker').in('marker', markers)
+    assert.equal(quoted.error, null)
+    assert.deepEqual(quoted.data.map((row) => row.marker).sort(), [...markers].sort())
+    const combined = await admin
+      .from(cfg.namespace)
+      .select('marker,name,quantity')
+      .in('marker', markers)
+      .gt('quantity', 31)
+      .lte('quantity', 33)
+      .not('name', 'eq', 'blocked')
+      .or('quantity.eq.32,quantity.eq.33')
+      .order('quantity', { ascending: false })
+      .order('marker')
+    assert.equal(combined.error, null)
+    assert.deepEqual(combined.data, [rows[3], rows[1]])
+    const ordered = await admin
+      .from(cfg.namespace)
+      .select('marker,name,quantity')
+      .in('marker', markers)
+      .lte('quantity', 32)
+      .order('quantity', { ascending: false })
+      .order('marker')
+    assert.equal(ordered.error, null)
+    assert.deepEqual(ordered.data, [rows[3], rows[1], rows[0]])
+    const alternatives = await admin
+      .from(cfg.namespace)
+      .select('marker,name,quantity')
+      .in('marker', markers)
+      .or('quantity.eq.31,quantity.eq.33')
+      .order('quantity', { ascending: false })
+    assert.equal(alternatives.error, null)
+    assert.deepEqual(alternatives.data, [rows[2], rows[0]])
+    const pattern = await admin
+      .from(cfg.namespace)
+      .select('marker')
+      .in('marker', markers)
+      .ilike('name', '%alpha%')
+    assert.equal(pattern.error, null)
+    assert.deepEqual(
+      pattern.data.map((row) => row.marker).sort(),
+      [markers[0], markers[1], markers[3]].sort()
+    )
+  } finally {
+    assert.equal((await admin.from(cfg.namespace).delete().in('marker', markers)).error, null)
+  }
+})
+
 test('SDK database supports single, maybeSingle, HEAD counts, ordering and ranges', async () => {
   const one = await admin
     .from(cfg.namespace)

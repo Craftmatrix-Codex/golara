@@ -80,35 +80,39 @@ for (const workload of workloads) {
     'Reference and GoLara response data must match before measuring'
   )
   for (const concurrency of [1, 10]) {
-    for (const name of ['postgrest', 'golara']) {
-      const target = targets[name]
-      for (let i = 0; i < 20; i++) await request(target, workload)
-      const samples = [],
-        count = 200
-      let next = 0
-      const start = performance.now()
-      await Promise.all(
-        Array.from({ length: concurrency }, async () => {
-          while (next++ < count) {
-            const t = performance.now()
-            await request(target, workload)
-            samples.push(performance.now() - t)
-          }
+    for (let round = 1; round <= 4; round++) {
+      const order = round % 2 === 1 ? ['postgrest', 'golara'] : ['golara', 'postgrest']
+      for (const name of order) {
+        const target = targets[name]
+        for (let i = 0; i < 20; i++) await request(target, workload)
+        const samples = [],
+          count = 200
+        let next = 0
+        const start = performance.now()
+        await Promise.all(
+          Array.from({ length: concurrency }, async () => {
+            while (next++ < count) {
+              const t = performance.now()
+              await request(target, workload)
+              samples.push(performance.now() - t)
+            }
+          })
+        )
+        const elapsed = performance.now() - start
+        samples.sort((a, b) => a - b)
+        const percentile = (p) =>
+          samples[Math.min(samples.length - 1, Math.ceil(samples.length * p) - 1)]
+        results.push({
+          round,
+          target: name,
+          workload: workload.name,
+          concurrency,
+          requests: samples.length,
+          p50_ms: percentile(0.5),
+          p95_ms: percentile(0.95),
+          requests_per_second: (1000 * samples.length) / elapsed,
         })
-      )
-      const elapsed = performance.now() - start
-      samples.sort((a, b) => a - b)
-      const percentile = (p) =>
-        samples[Math.min(samples.length - 1, Math.ceil(samples.length * p) - 1)]
-      results.push({
-        target: name,
-        workload: workload.name,
-        concurrency,
-        requests: samples.length,
-        p50_ms: percentile(0.5),
-        p95_ms: percentile(0.95),
-        requests_per_second: (1000 * samples.length) / elapsed,
-      })
+      }
     }
   }
 }
@@ -117,6 +121,8 @@ const report = {
     'Local direct REST/RPC endpoints on the same PostgreSQL fixture. Excludes Auth, Storage, Realtime, Functions and Studio. This is not a whole-Supabase performance comparison.',
   reference: 'postgrest/postgrest:v14.12 (pinned by repository docker/docker-compose.yml)',
   fixture_rows: 2000,
+  rounds: 4,
+  ordering: 'Alternating target order each round, with 20 warmup requests before each measurement',
   results,
 }
 if (process.env.GOLARA_BENCH_REPORT)

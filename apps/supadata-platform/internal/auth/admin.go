@@ -7,9 +7,16 @@ import (
 )
 
 func (r *PostgresRepository) DeleteUser(ctx context.Context, userID string) error {
-	result, err := r.databaseForContext(ctx).ExecContext(ctx, fmt.Sprintf(`
-		UPDATE %s.users SET deleted_at = NOW(), updated_at = NOW()
-		WHERE id = $1 AND deleted_at IS NULL`, quoteIdentifier(r.schema)), userID)
+	return r.DeleteUserWithOptions(ctx, userID, false)
+}
+
+func (r *PostgresRepository) DeleteUserWithOptions(ctx context.Context, userID string, soft bool) error {
+	query := fmt.Sprintf(`DELETE FROM %s.users WHERE id = $1`, quoteIdentifier(r.schema))
+	if soft {
+		query = fmt.Sprintf(`UPDATE %s.users SET deleted_at = NOW(), updated_at = NOW()
+   WHERE id = $1 AND deleted_at IS NULL`, quoteIdentifier(r.schema))
+	}
+	result, err := r.databaseForContext(ctx).ExecContext(ctx, query, userID)
 	if err != nil {
 		return fmt.Errorf("delete auth user: %w", err)
 	}
