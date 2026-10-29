@@ -100,6 +100,37 @@ test('SDK Auth admin creates a confirmed user; password, getUser, refresh, and s
   }
 })
 
+test('Auth admin rejects malformed deletion requests before changing the user', async () => {
+  const email = `golara-sdk-delete-${marker}@example.invalid`
+  const password = `Sdk-${marker}!`
+  const created = await admin.auth.admin.createUser({ email, password, email_confirm: true })
+  assert.equal(created.error, null)
+  const id = created.data.user.id
+  try {
+    for (const body of ['{} garbage', '{} {"should_soft_delete":true}']) {
+      const response = await fetch(`${cfg.sdkURL}/auth/v1/admin/users/${id}`, {
+        method: 'DELETE',
+        headers: {
+          apikey: cfg.serviceRoleKey,
+          Authorization: `Bearer ${cfg.serviceRoleKey}`,
+          'Content-Type': 'application/json',
+        },
+        body,
+        signal: AbortSignal.timeout(10000),
+      })
+      await response.text()
+      assert.equal(response.status, 400)
+    }
+    const client = sdkClient(cfg)
+    const login = await client.auth.signInWithPassword({ email, password })
+    assert.equal(login.error, null, 'Malformed deletion must not remove the account')
+    assert.equal(login.data.user.id, id)
+    assert.equal((await client.auth.signOut()).error, null)
+  } finally {
+    assert.equal((await admin.auth.admin.deleteUser(id)).error, null)
+  }
+})
+
 test('SDK database insert/select/update/upsert/delete returns real fixture rows', async () => {
   const row = { marker, name: 'sdk-contract', quantity: 3 }
   try {

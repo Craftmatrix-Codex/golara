@@ -11,6 +11,7 @@ Stable is deployed at `https://golara.craftmatrix.org`. Passing the current cont
 - Realtime public channel subscription is verified. Broadcast, presence, PostgreSQL changes, private-channel authorization, and reconnection behavior need individual official SDK contracts.
 - Deno deployment/invocation and project/public URL propagation are verified. Full secrets/logs/runtime lifecycle parity and sandbox isolation remain open.
 - API-key-to-project mapping, shared-database account isolation, and complete control-plane SQL/database routing require further negative testing.
+- Studio Advisors currently receives an empty lint result; its “no issues” display is not evidence that security or performance checks actually ran.
 - Broad feature navigation checks establish rendering and required request success; they do not prove every button, editor operation, or integration works.
 - Production-scale load, soak, backup restoration, failover, and matched reference-Supabase benchmarks are outstanding. No claim that GoLara is faster than Supabase has been established.
 - Coolify requires a named mount at `/var/lib/supadata`; a Dockerfile `VOLUME` alone creates anonymous volumes and does not preserve state across Coolify replacement. Stable now uses `poslsmflcfylqkhdl131pj6o-golara-stable-data`; prior volumes and root-only recovery snapshots are retained.

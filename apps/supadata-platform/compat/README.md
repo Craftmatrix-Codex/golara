@@ -14,7 +14,7 @@ Run `npm run test:browser --prefix apps/supadata-platform/compat` for desktop/mo
 
 Stable testing is explicitly authorized for this project. Use the dedicated fixture namespace and service credentials only for the configured target. Never point the fixture SQL or failure/load tests at unrelated application data.
 
-The browser suite now checks 12 Studio feature pages in addition to sign-in/session flows. Page navigation success does not establish complete interaction parity.
+The browser suite has 18 cases: desktop/mobile sign-in and menu logout, failure/retry behavior, SDK-created user visibility and default deletion readback, and 12 Studio feature pages. The API/SDK suite has 15 contracts, including malformed deletion requests that must preserve the user. Page navigation success does not establish complete interaction parity.
 
 `npm run test:recreate --prefix apps/supadata-platform/compat` is an opt-in replacement test for the fixed disposable local harness at `http://127.0.0.1:18080`. In addition to `GOLARA_CONFIG_FILE`, set `GOLARA_LOCAL_ENV_FILE` to its protected local environment file. It replaces only `golara-sdk-slim`, requires the loopback port and `golara-sdk-app-data` mount, keeps browser cookies in memory, and restores the previous test container on failure. Never use this workflow on a live deployment.
 

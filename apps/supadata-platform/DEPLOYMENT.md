@@ -1,6 +1,6 @@
 # Deployment
 
-Stable is deployed through `https://dev.craftmatrix.org` at `https://golara.craftmatrix.org`. Runtime revision `601d31ee74` is healthy as of 2026-10-29. The previous Coolify deployment remains available for rollback; preserve the named data volume when rolling back.
+Stable is deployed through `https://dev.craftmatrix.org` at `https://golara.craftmatrix.org`. Runtime revision `d123a7d3eb` is healthy as of 2026-10-29. The previous Coolify deployment remains available for rollback; preserve the named data volume when rolling back.
 
 The production target is one reproducible multi-stage Docker build containing:
 
@@ -11,7 +11,7 @@ The production target is one reproducible multi-stage Docker build containing:
 - Minimal NGINX runtime configuration.
 - No Node or Go toolchain in the final runtime image.
 
-Deploy each patch after local compatibility, security, Docker, and browser gates pass, then verify the exact image revision, health, named mount, official SDK contracts, and browser flows through the public HTTPS origin. Passing these gates covers the tested behaviors; it does not establish full Supabase parity.
+Deploy each patch after local compatibility, security, Docker, and browser gates pass, then verify the exact image revision, health, named mount, official SDK contracts, and browser flows through the public HTTPS origin. The 2026-10-29 checkpoint passed 15 API/SDK contracts and 18 browser checks both locally and on Stable. Passing these gates covers the tested behaviors; it does not establish full Supabase parity.
 
 ## Stable runtime settings
 
