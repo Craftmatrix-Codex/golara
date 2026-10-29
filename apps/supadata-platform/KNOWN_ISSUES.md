@@ -5,6 +5,7 @@ Stable is deployed at `https://golara.craftmatrix.org`. Passing the current cont
 - The official `@supabase/supabase-js` 2.118.0 inventory contains 223 callable surfaces. Many remain unverified; representative contract counts are not a parity percentage.
 - Email delivery, SMS, and OAuth validation/configuration are deferred by the user (2026-10-29); these remain unverified.
 - Explicit soft deletion currently marks and retains the account; GoTrue-style anonymization and complete soft-delete semantics remain incomplete. Default admin deletion now removes the user record. Existing retained records are not purged automatically.
+- Existing active sessions created before project tagging can make global/other-session logout return a conflict if their project cannot be determined. They require a separately validated migration; default-project local logout remains available.
 - Auth still needs broader admin updates, OAuth/SSO, OTP/recovery/email/SMS delivery, anonymous accounts, MFA, passkeys, identity management, and complete GoTrue session/error semantics.
 - REST/RPC still need complete PostgREST grammar, embedding, schema/profile negotiation, return-shape/error parity, and preference semantics.
 - Storage private access currently uses coarse authenticated/project checks. Per-object RLS policies, full SDK bucket management, signed URLs, resumable uploads, transforms, vector/analytics APIs, and exact error parity remain incomplete.

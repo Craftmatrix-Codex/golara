@@ -100,6 +100,54 @@ test('SDK Auth admin creates a confirmed user; password, getUser, refresh, and s
   }
 })
 
+test('SDK Auth signOut scopes revoke the intended sessions only', async () => {
+  const email = `golara-sdk-scopes-${marker}@example.invalid`
+  const password = `Sdk-${marker}!`
+  const created = await admin.auth.admin.createUser({ email, password, email_confirm: true })
+  assert.equal(created.error, null)
+  const observer = sdkClient(cfg)
+  const login = async () => {
+    const client = sdkClient(cfg)
+    const result = await client.auth.signInWithPassword({ email, password })
+    assert.equal(result.error, null)
+    return {
+      client,
+      token: result.data.session.access_token,
+      refreshToken: result.data.session.refresh_token,
+    }
+  }
+  const active = async (session) => (await observer.auth.getUser(session.token)).error === null
+  try {
+    const first = await login()
+    const second = await login()
+    assert.equal((await first.client.auth.signOut({ scope: 'others' })).error, null)
+    assert.equal(await active(first), true, 'others must preserve the current session')
+    assert.equal(await active(second), false, 'others must revoke other sessions')
+    const secondRefresh = await sdkClient(cfg).auth.refreshSession({
+      refresh_token: second.refreshToken,
+    })
+    assert.ok(secondRefresh.error, 'others must revoke the other session refresh token')
+    const firstRefresh = await sdkClient(cfg).auth.refreshSession({
+      refresh_token: first.refreshToken,
+    })
+    assert.equal(firstRefresh.error, null, 'others must preserve the current refresh token')
+    const third = await login()
+    assert.equal((await first.client.auth.signOut({ scope: 'local' })).error, null)
+    assert.equal(await active(first), false, 'local must revoke the current session')
+    assert.equal(await active(third), true, 'local must preserve other sessions')
+    const fourth = await login()
+    assert.equal((await third.client.auth.signOut()).error, null)
+    assert.equal(await active(third), false, 'global must revoke the current session')
+    assert.equal(await active(fourth), false, 'global must revoke other sessions')
+    const fourthRefresh = await sdkClient(cfg).auth.refreshSession({
+      refresh_token: fourth.refreshToken,
+    })
+    assert.ok(fourthRefresh.error, 'global must revoke other session refresh tokens')
+  } finally {
+    assert.equal((await admin.auth.admin.deleteUser(created.data.user.id)).error, null)
+  }
+})
+
 test('Auth admin rejects malformed deletion requests before changing the user', async () => {
   const email = `golara-sdk-delete-${marker}@example.invalid`
   const password = `Sdk-${marker}!`

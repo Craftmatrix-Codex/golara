@@ -13,6 +13,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/database"
+	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/project"
 )
 
 const defaultAuthSchema = "auth"
@@ -114,9 +115,13 @@ func (r *PostgresRepository) CreateSession(ctx context.Context, userID, refreshT
 	}
 	defer transaction.Rollback()
 	quotedSchema := quoteIdentifier(r.schema)
+	projectID := "default"
+	if scope, ok := project.ScopeFromContext(ctx); ok && scope.ID != "" {
+		projectID = scope.ID
+	}
 	if _, err := transaction.ExecContext(ctx, fmt.Sprintf(`
-		INSERT INTO %s.sessions (id, user_id, created_at, updated_at, not_after)
-		VALUES ($1, $2, NOW(), NOW(), $3)`, quotedSchema), sessionID, userID, expiresAt); err != nil {
+		INSERT INTO %s.sessions (id, user_id, created_at, updated_at, not_after, golara_project_id)
+		VALUES ($1, $2, NOW(), NOW(), $3, $4)`, quotedSchema), sessionID, userID, expiresAt, projectID); err != nil {
 		return Session{}, fmt.Errorf("create auth session: %w", err)
 	}
 	if _, err := transaction.ExecContext(ctx, fmt.Sprintf(`

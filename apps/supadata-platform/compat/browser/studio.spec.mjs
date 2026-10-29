@@ -152,8 +152,19 @@ test('Studio Authentication lists a user created through the official SDK', asyn
     await page.getByRole('button', { name: 'Sign in', exact: true }).click()
     await expect(page).toHaveURL(/\/project\/default/)
     await page.goto('/project/default/auth/users')
-    await page.getByRole('textbox', { name: 'Search by email', exact: true }).fill(email)
-    await page.getByRole('textbox', { name: 'Search by email', exact: true }).press('Enter')
+    await expect(page.getByRole('grid')).toBeVisible()
+    await expect(page.getByText(/^Total:/)).toBeVisible()
+    const search = page.getByRole('textbox', { name: 'Search by email', exact: true })
+    await search.fill(email)
+    await expect(search).toHaveValue(email)
+    const searched = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        response.url().includes('/pg-meta/') &&
+        (response.request().postData() ?? '').includes(email)
+    )
+    await search.press('Enter')
+    expect((await searched).status()).toBe(200)
     await expect(page.getByText(email, { exact: true }).first()).toBeVisible()
     expect((await admin.auth.admin.deleteUser(userID)).error).toBeNull()
     userID = undefined

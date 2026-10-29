@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -104,7 +105,9 @@ func main() {
 			os.Exit(1)
 		}
 		jobScheduler = jobs.NewScheduler(databaseConnections.Primary, jobs.SchedulerOptions{})
-		if schemaErr := auth.EnsurePostgresSchema(context.Background(), databaseConnections.Primary, "auth"); schemaErr != nil {
+		if schemaErr := databaseConnections.EachDatabase(func(connection *sql.DB) error {
+			return auth.EnsurePostgresSchema(context.Background(), connection, "auth")
+		}); schemaErr != nil {
 			slog.Error("reconcile Auth schema", "error", schemaErr)
 			os.Exit(1)
 		}

@@ -33,7 +33,7 @@ func TestPostgresRepositoryPasswordSessionRoundTrip(t *testing.T) {
 			encrypted_password varchar(255), raw_app_meta_data jsonb, raw_user_meta_data jsonb,
 			created_at timestamptz, updated_at timestamptz, confirmed_at timestamptz, deleted_at timestamptz
 		);
-		CREATE TABLE auth.sessions (id uuid PRIMARY KEY, user_id uuid NOT NULL REFERENCES auth.users(id), created_at timestamptz, updated_at timestamptz, not_after timestamptz, refreshed_at timestamptz);
+		CREATE TABLE auth.sessions (id uuid PRIMARY KEY, user_id uuid NOT NULL REFERENCES auth.users(id), created_at timestamptz, updated_at timestamptz, not_after timestamptz, refreshed_at timestamptz, golara_project_id text);
 		CREATE TABLE auth.refresh_tokens (id bigserial PRIMARY KEY, token varchar(255), user_id varchar(255), revoked boolean, created_at timestamptz, updated_at timestamptz, session_id uuid REFERENCES auth.sessions(id));
 	`)
 	if err != nil {

@@ -27,6 +27,7 @@ func TestEnsurePostgresSchemaReconcilesAuthRuntimeTables(t *testing.T) {
 		`CREATE TABLE IF NOT EXISTS "auth".identities`,
 		`CREATE INDEX IF NOT EXISTS identities_user_id_idx`,
 		`CREATE TABLE IF NOT EXISTS "auth".sessions`,
+		`ALTER TABLE "auth".sessions ADD COLUMN IF NOT EXISTS golara_project_id`,
 		`CREATE TABLE IF NOT EXISTS "auth".refresh_tokens`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS auth_users_email_unique`,
 	} {

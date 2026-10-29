@@ -95,6 +95,19 @@ func configurePool(connection *sql.DB, size int) {
 	connection.SetConnMaxLifetime(30 * time.Minute)
 }
 
+// EachDatabase visits each distinct configured database connection once.
+func (c *DatabaseConnections) EachDatabase(fn func(*sql.DB) error) error {
+	if c == nil {
+		return nil
+	}
+	for _, connection := range c.all {
+		if err := fn(connection); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (c *DatabaseConnections) Close() {
 	if c == nil {
 		return

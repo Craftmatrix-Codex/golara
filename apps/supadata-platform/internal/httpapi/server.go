@@ -233,8 +233,33 @@ func (s *Server) serveHTTP(response http.ResponseWriter, request *http.Request) 
 			writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 			return
 		}
-		if err := logoutService.Logout(request.Context(), accessToken); err != nil {
-			writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "invalid token"})
+		scope := request.URL.Query().Get("scope")
+		if scope == "" {
+			scope = "global"
+		}
+		if scope != "global" && scope != "local" && scope != "others" {
+			writeJSON(response, http.StatusBadRequest, map[string]string{"error": "invalid logout scope"})
+			return
+		}
+		var logoutErr error
+		if scoped, ok := s.auth.(interface {
+			LogoutWithScope(context.Context, string, string) error
+		}); ok {
+			logoutErr = scoped.LogoutWithScope(request.Context(), accessToken, scope)
+		} else if scope != "local" {
+			writeJSON(response, http.StatusNotImplemented, map[string]string{"error": "logout scope unavailable"})
+			return
+		} else {
+			logoutErr = logoutService.Logout(request.Context(), accessToken)
+		}
+		if logoutErr != nil {
+			if errors.Is(logoutErr, auth.ErrUnscopedLegacySessions) {
+				writeJSON(response, http.StatusConflict, map[string]string{"error": "legacy sessions require migration"})
+			} else if errors.Is(logoutErr, auth.ErrInvalidCredentials) {
+				writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "invalid token"})
+			} else {
+				writeJSON(response, http.StatusBadGateway, map[string]string{"error": "session revocation failed"})
+			}
 			return
 		}
 		writeJSON(response, http.StatusNoContent, nil)

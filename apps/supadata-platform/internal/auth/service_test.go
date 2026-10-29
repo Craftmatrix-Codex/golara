@@ -65,6 +65,14 @@ func (r *fakeRepository) RevokeSession(_ context.Context, sessionID string) erro
 	return nil
 }
 
+func (r *fakeRepository) RevokeUserSessions(_ context.Context, userID, currentSessionID string, others bool) error {
+	if userID == r.session.UserID && !others {
+		r.revokedSession = currentSessionID
+		r.sessionRevoked = true
+	}
+	return nil
+}
+
 func (r *fakeRepository) IsSessionActive(_ context.Context, sessionID string) (bool, error) {
 	return sessionID == r.session.ID && !r.sessionRevoked && time.Now().Before(r.session.ExpiresAt), nil
 }

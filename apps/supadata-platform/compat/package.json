@@ -11,7 +11,8 @@
     "test:sdk": "node --test --test-concurrency=1 suites/*.test.mjs",
     "test:browser": "playwright test --config=playwright.config.mjs",
     "test:recreate": "node recreate-local.mjs",
-    "bench:local": "node bench-local.mjs"
+    "bench:local": "node bench-local.mjs",
+    "test:live": "node live-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0"

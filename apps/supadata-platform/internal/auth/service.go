@@ -243,6 +243,13 @@ func (s *Service) DeleteUserWithOptions(ctx context.Context, userID string, soft
 }
 
 func (s *Service) Logout(ctx context.Context, accessToken string) error {
+	return s.LogoutWithScope(ctx, accessToken, "global")
+}
+
+func (s *Service) LogoutWithScope(ctx context.Context, accessToken, scope string) error {
+	if scope != "global" && scope != "local" && scope != "others" {
+		return errors.New("invalid logout scope")
+	}
 	if len(s.jwtSecret) == 0 || strings.TrimSpace(accessToken) == "" {
 		return ErrInvalidCredentials
 	}
@@ -253,12 +260,35 @@ func (s *Service) Logout(ctx context.Context, accessToken string) error {
 	if err := validateProjectClaims(ctx, claims); err != nil {
 		return ErrInvalidCredentials
 	}
+	validator, ok := s.repository.(SessionValidator)
+	if !ok {
+		return errors.New("session validation is not configured")
+	}
+	active, err := validator.IsSessionActive(ctx, claims.SessionID)
+	if err != nil {
+		return fmt.Errorf("validate auth session: %w", err)
+	}
+	if !active {
+		return ErrInvalidCredentials
+	}
 	revoker, ok := s.repository.(SessionRevoker)
 	if !ok {
 		return errors.New("session revocation is not configured")
 	}
-	if err := revoker.RevokeSession(ctx, claims.SessionID); err != nil {
-		return fmt.Errorf("revoke auth session: %w", err)
+	if scope == "local" {
+		if err := revoker.RevokeSession(ctx, claims.SessionID); err != nil {
+			return fmt.Errorf("revoke auth session: %w", err)
+		}
+		return nil
+	}
+	scoped, ok := s.repository.(interface {
+		RevokeUserSessions(context.Context, string, string, bool) error
+	})
+	if !ok {
+		return errors.New("scoped session revocation is not configured")
+	}
+	if err := scoped.RevokeUserSessions(ctx, claims.Subject, claims.SessionID, scope == "others"); err != nil {
+		return fmt.Errorf("revoke auth sessions: %w", err)
 	}
 	return nil
 }

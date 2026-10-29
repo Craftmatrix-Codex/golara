@@ -78,6 +78,7 @@ func EnsurePostgresSchema(ctx context.Context, database *sql.DB, schema string) 
 			not_after timestamptz,
 			refreshed_at timestamptz
 		)`, quotedSchema, quotedSchema),
+		fmt.Sprintf(`ALTER TABLE %s.sessions ADD COLUMN IF NOT EXISTS golara_project_id text`, quotedSchema),
 		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.refresh_tokens (
 			id bigserial PRIMARY KEY,
 			token text NOT NULL,
