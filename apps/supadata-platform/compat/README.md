@@ -13,3 +13,9 @@ Run `npm run test:sdk --prefix apps/supadata-platform/compat` against local or S
 Run `npm run test:browser --prefix apps/supadata-platform/compat` for desktop/mobile rendering, real sign-in, protected app navigation, runtime errors, and public URL checks. Screenshots go to `output/playwright/golara-stable`; traces and videos stay disabled because authentication requests contain credentials. Do not publish unreviewed artifacts.
 
 Stable testing is explicitly authorized for this project. Use the dedicated fixture namespace and service credentials only for the configured target. Never point the fixture SQL or failure/load tests at unrelated application data.
+
+The browser suite now checks 12 Studio feature pages in addition to sign-in/session flows. Page navigation success does not establish complete interaction parity.
+
+`npm run test:recreate --prefix apps/supadata-platform/compat` is an opt-in replacement test for the fixed disposable local harness at `http://127.0.0.1:18080`. In addition to `GOLARA_CONFIG_FILE`, set `GOLARA_LOCAL_ENV_FILE` to its protected local environment file. It replaces only `golara-sdk-slim`, requires the loopback port and `golara-sdk-app-data` mount, keeps browser cookies in memory, and restores the previous test container on failure. Never use this workflow on a live deployment.
+
+For local REST/RPC comparisons, `bench-local.mjs` requires the same protected local configuration/environment and the fixed `golara-sdk-slim`, `golara-sdk-reference` (PostgREST 14.12), and PostgreSQL harness network. Render the 2,000-row disposable fixture with `prepare.mjs --sql-benchmark` and apply it to the local fixture database first. It checks matching response data before comparing 200 requests per workload at concurrency 1 and 10. Keep the machine quiet, run multiple trials, and record resource limits and versions. This measures selected direct REST/RPC endpoints; it does not establish whole-Supabase performance.

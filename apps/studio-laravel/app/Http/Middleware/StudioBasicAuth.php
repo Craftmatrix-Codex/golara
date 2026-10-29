@@ -2,12 +2,15 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\StudioSessionRegistry;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class StudioBasicAuth
 {
+    public function __construct(private StudioSessionRegistry $sessions) {}
+
     public function handle(Request $request, Closure $next): Response
     {
         $username = (string) config('studio.auth_username');
@@ -21,7 +24,7 @@ class StudioBasicAuth
             return $next($request);
         }
 
-        if ($request->session()->get('studio_authenticated') === true) {
+        if ($request->session()->get('studio_authenticated') === true && $this->sessions->active($request->session()->getId())) {
             return $next($request);
         }
 
@@ -37,7 +40,7 @@ class StudioBasicAuth
 
             $returnTo = $request->getRequestUri();
 
-            return redirect('/sign-in?returnTo=' . rawurlencode($returnTo));
+            return redirect('/sign-in?returnTo='.rawurlencode($returnTo));
         }
 
         return $next($request);

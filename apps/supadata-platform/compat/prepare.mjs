@@ -1,7 +1,11 @@
 import { loadConfig } from './config.mjs'
 
 const cfg = loadConfig()
-if (process.argv.includes('--sql')) {
+if (process.argv.includes('--sql-benchmark')) {
+  console.log(`INSERT INTO public."${cfg.namespace}" (marker, name, quantity)
+SELECT 'golara_sdk_benchmark_' || g, 'benchmark row ' || g, g
+FROM generate_series(1, 2000) g ON CONFLICT (marker) DO NOTHING;`)
+} else if (process.argv.includes('--sql')) {
   const table = `"${cfg.namespace}"`
   const rpc = `"${cfg.namespace}_echo"`
   console.log(`CREATE TABLE IF NOT EXISTS public.${table} (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), marker text NOT NULL UNIQUE, name text NOT NULL, quantity integer NOT NULL DEFAULT 0);

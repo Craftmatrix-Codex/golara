@@ -60,7 +60,9 @@ return [
     |
     */
 
-    'files' => storage_path('framework/sessions'),
+    'files' => env('SESSION_FILES', env('SUPADATA_DATA_DIR')
+        ? rtrim(env('SUPADATA_DATA_DIR'), '/').'/sessions'
+        : storage_path('framework/sessions')),
 
     /*
     |--------------------------------------------------------------------------

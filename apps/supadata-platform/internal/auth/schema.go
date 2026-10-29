@@ -49,6 +49,27 @@ func EnsurePostgresSchema(ctx context.Context, database *sql.DB, schema string) 
 			ADD COLUMN IF NOT EXISTS encrypted_password text`, quotedSchema),
 		fmt.Sprintf(`ALTER TABLE %s.users
 			ADD COLUMN IF NOT EXISTS deleted_at timestamptz`, quotedSchema),
+		fmt.Sprintf(`ALTER TABLE %s.users
+			ADD COLUMN IF NOT EXISTS instance_id uuid NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'::uuid,
+			ADD COLUMN IF NOT EXISTS banned_until timestamptz,
+			ADD COLUMN IF NOT EXISTS confirmation_sent_at timestamptz,
+			ADD COLUMN IF NOT EXISTS is_anonymous boolean NOT NULL DEFAULT false,
+			ADD COLUMN IF NOT EXISTS is_sso_user boolean NOT NULL DEFAULT false,
+			ADD COLUMN IF NOT EXISTS invited_at timestamptz,
+			ADD COLUMN IF NOT EXISTS last_sign_in_at timestamptz,
+			ADD COLUMN IF NOT EXISTS phone text,
+			ADD COLUMN IF NOT EXISTS confirmed_at timestamptz,
+			ADD COLUMN IF NOT EXISTS email_confirmed_at timestamptz,
+			ADD COLUMN IF NOT EXISTS phone_confirmed_at timestamptz`, quotedSchema),
+		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.identities (
+			id uuid PRIMARY KEY,
+			user_id uuid NOT NULL REFERENCES %s.users(id) ON DELETE CASCADE,
+			provider text NOT NULL,
+			identity_data jsonb NOT NULL DEFAULT '{}'::jsonb,
+			created_at timestamptz NOT NULL DEFAULT now(),
+			updated_at timestamptz NOT NULL DEFAULT now()
+		)`, quotedSchema, quotedSchema),
+		fmt.Sprintf(`CREATE INDEX IF NOT EXISTS identities_user_id_idx ON %s.identities(user_id)`, quotedSchema),
 		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.sessions (
 			id uuid PRIMARY KEY,
 			user_id uuid NOT NULL REFERENCES %s.users(id) ON DELETE CASCADE,

@@ -69,3 +69,63 @@ test('browser sign-in opens the real Studio; protected responses use public conf
   expect((await page.request.post('/api/studio-auth/logout')).status()).toBe(200)
   expect((await page.request.get('/api/platform/projects')).status()).toBe(401)
 })
+
+// Exercise real application pages beyond the sign-in/landing shell.
+test.describe('Studio feature navigation', () => {
+  let context
+  test.beforeAll(async ({ browser }) => {
+    context = await browser.newContext({ baseURL: cfg.publicURL })
+    const page = await context.newPage()
+    await page.goto('/sign-in')
+    await page.getByLabel('Email or username', { exact: true }).fill(cfg.studioUsername)
+    await page.getByLabel('Password', { exact: true }).fill(cfg.studioPassword)
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await expect(page.getByRole('link', { name: /Database/ }).first()).toBeVisible()
+    await page.close()
+  })
+  test.afterAll(async () => {
+    await context?.close()
+  })
+
+  for (const [name, path] of [
+    ['Table Editor', 'editor'],
+    ['SQL Editor', 'sql'],
+    ['Database', 'database/schemas'],
+    ['Authentication', 'auth/users'],
+    ['Storage', 'storage/files'],
+    ['Edge Functions', 'functions'],
+    ['Realtime', 'realtime/inspector'],
+    ['Advisors', 'advisors/security'],
+    ['Observability', 'observability'],
+    ['Logs', 'logs/explorer'],
+    ['Integrations', 'integrations'],
+    ['Project Settings', 'settings/general'],
+  ]) {
+    test(`${name} loads without backend or browser errors`, async () => {
+      const page = await context.newPage()
+      const failures = [],
+        errors = [],
+        loopback = []
+      page.on('response', (response) => {
+        if (response.status() >= 400 && !response.url().includes('/api/telemetry'))
+          failures.push(`${response.status()} ${new URL(response.url()).pathname}`)
+      })
+      page.on('pageerror', (error) => errors.push(error.message))
+      page.on('request', (request) => {
+        if (!local && /localhost|127\.0\.0\.1|0\.0\.0\.0/.test(request.url()))
+          loopback.push(request.url())
+      })
+      try {
+        expect((await page.goto(`/project/default/${path}`)).status()).toBe(200)
+        await expect(page.getByRole('heading', { name, exact: true }).first()).toBeVisible()
+        await page.waitForLoadState('networkidle')
+        expect(failures).toEqual([])
+        expect(errors).toEqual([])
+        expect(loopback).toEqual([])
+        expect(await page.locator('body').innerText()).not.toMatch(/localhost/i)
+      } finally {
+        await page.close()
+      }
+    })
+  }
+})

@@ -9,7 +9,8 @@ COPY apps/supadata-platform/go.mod apps/supadata-platform/go.sum ./
 RUN GOTOOLCHAIN=local go mod download
 COPY apps/supadata-platform/cmd/ ./cmd/
 COPY apps/supadata-platform/internal/ ./internal/
-RUN GOTOOLCHAIN=local go test ./... && \
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    GOTOOLCHAIN=local go test ./... && \
     GOTOOLCHAIN=local go test -race ./... && \
     GOTOOLCHAIN=local go vet ./... && \
     CGO_ENABLED=0 GOTOOLCHAIN=local go build -trimpath -buildvcs=false -ldflags='-s -w' -o /out/supadata-platform ./cmd/server
@@ -53,14 +54,26 @@ RUN STUDIO_CLIENT_SOURCE=/tmp/studio-client ./scripts/sync-studio-client.sh
 
 FROM denoland/deno:2.5.3 AS deno-runtime
 
-FROM php:8.4-fpm-bookworm AS production
+FROM php:8.4-fpm-bookworm AS php-runtime
 RUN apt-get update -qq && \
-    apt-get install -y --no-install-recommends nginx ca-certificates curl wget libonig-dev libpq-dev libsqlite3-dev && \
+    apt-get install -y --no-install-recommends libonig-dev libpq-dev libsqlite3-dev && \
     docker-php-ext-install mbstring pdo_pgsql pdo_sqlite opcache && \
     rm -rf /var/lib/apt/lists/* && \
-    printf '\n; Pass Coolify runtime variables through to Laravel workers.\nclear_env = no\n' >> /usr/local/etc/php-fpm.d/www.conf && \
+    printf '\n; Pass Coolify runtime variables through to Laravel workers.\nclear_env = no\n' >> /usr/local/etc/php-fpm.d/www.conf
+
+# Copy the compiled PHP runtime into a clean image so compilers, headers, and
+# development packages do not ship to Stable.
+FROM debian:bookworm-slim AS production
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends nginx ca-certificates curl wget \
+        libonig5 libpq5 libsqlite3-0 libreadline8 libxml2 libsodium23 libargon2-1 && \
+    rm -rf /var/lib/apt/lists/* && \
     mkdir -p /var/lib/supadata/content /var/www/studio && \
     chown -R www-data:www-data /var/lib/supadata
+COPY --from=php-runtime /usr/local/bin/php /usr/local/bin/php
+COPY --from=php-runtime /usr/local/sbin/php-fpm /usr/local/sbin/php-fpm
+COPY --from=php-runtime /usr/local/lib/php/extensions /usr/local/lib/php/extensions
+COPY --from=php-runtime /usr/local/etc /usr/local/etc
 COPY --from=go-build /out/supadata-platform /usr/local/bin/supadata-platform
 COPY --from=deno-runtime /usr/bin/deno /usr/bin/deno
 COPY --from=laravel-build /app /var/www/studio

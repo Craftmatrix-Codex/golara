@@ -2,9 +2,11 @@
 set -eu
 
 data_dir="${SUPADATA_DATA_DIR:-/var/lib/supadata}"
-mkdir -p "$data_dir"
+mkdir -p "$data_dir/sessions" "$data_dir/cache"
 chown -R www-data:www-data "$data_dir" 2>/dev/null || true
 chmod 2770 "$data_dir" 2>/dev/null || true
+chmod 2770 "$data_dir/sessions" 2>/dev/null || true
+chmod 2770 "$data_dir/cache" 2>/dev/null || true
 
 if [ "${DB_CONNECTION:-sqlite}" = "sqlite" ]; then
   studio_database="${DB_DATABASE:-$data_dir/studio.sqlite}"

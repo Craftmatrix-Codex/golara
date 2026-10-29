@@ -193,3 +193,11 @@ Still requiring separate parity work or acceptance coverage:
 - complete production-scale load, backup, and disaster-recovery validation.
 
 Do not describe an item in the second list as complete until its live behavior has been exercised and read back.
+
+### Stable installation and persistence prerequisites
+
+Run `scripts/bootstrap-api-roles.sql` as the database administrator before contract testing. The trusted server `service_role` must bypass RLS; `anon` and `authenticated` must respect it. Keep service credentials on trusted servers. This follows the [official Supabase roles contract](https://supabase.com/docs/guides/database/postgres/roles). The application also requires its existing PostgreSQL/GraphQL prerequisites.
+
+Mount a named persistent volume at `SUPADATA_DATA_DIR` (`/var/lib/supadata` by default) in Coolify. A Dockerfile `VOLUME` declaration does not provide stable volume identity during Coolify replacement. The registry, SQL content, functions, telemetry database, and file sessions must survive replacement. Stable uses `poslsmflcfylqkhdl131pj6o-golara-stable-data`. Configure `APP_URL` and `SUPADATA_PUBLIC_HOST` with the real public domain, keep `SESSION_DRIVER=file`, and let Laravel use the mounted `sessions` directory.
+
+Manage build arguments manually in the Dockerfile; this image needs no runtime secrets at build time. Supply runtime environment variables through Coolify. After each rollout, read back the exact image revision and named mount, then run the official SDK and browser suites described in `compat/README.md`.

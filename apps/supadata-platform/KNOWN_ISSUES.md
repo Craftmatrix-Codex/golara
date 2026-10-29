@@ -1,9 +1,14 @@
-# Known Issues
+# Known issues
 
-- The Go service is not deployed to production.
-- Auth remains partial: email delivery, OAuth, MFA, admin, logout, recovery, and complete GoTrue parity are not implemented.
-- REST currently supports basic parameterized SELECT/INSERT/UPDATE/DELETE/RPC, API-key/JWT checks, and authenticated RLS claim transactions; upsert, embeds, complete filters, headers, and exact PostgREST parity remain.
-- Realtime now has a partial API-key/JWT-gated Phoenix WebSocket handshake and heartbeat/join slice; broadcast, presence, PostgreSQL changes, tenant authorization, and exact protocol parity remain. Metadata/admin APIs, functions, and jobs are not implemented yet. Storage has a partial object API and S3-compatible backend, but bucket metadata, signed URLs, policies, resumable uploads, and exact Storage parity remain.
-- The unified multi-stage Studio + Go + NGINX Dockerfile builds and has local NGINX smoke coverage; production deployment and public compatibility are not proven.
-- The current Node control plane and existing Supabase runtime remain in place for rollback.
-- The existing production project-provisioning PostgreSQL role/password synchronization issue remains a separate unresolved production issue until the Go path replaces or repairs that flow.
+Stable is deployed at `https://golara.craftmatrix.org`. Passing the current contract suite establishes the tested behaviors, not full Supabase compatibility.
+
+- The official `@supabase/supabase-js` 2.118.0 inventory contains 223 callable surfaces. Many remain unverified; representative contract counts are not a parity percentage.
+- Auth still needs broader admin updates, OAuth/SSO, OTP/recovery/email/SMS delivery, anonymous accounts, MFA, passkeys, identity management, and complete GoTrue session/error semantics.
+- REST/RPC still need complete PostgREST grammar, embedding, schema/profile negotiation, return-shape/error parity, and preference semantics.
+- Storage private access currently uses coarse authenticated/project checks. Per-object RLS policies, full SDK bucket management, signed URLs, resumable uploads, transforms, vector/analytics APIs, and exact error parity remain incomplete.
+- Realtime public channel subscription is verified. Broadcast, presence, PostgreSQL changes, private-channel authorization, and reconnection behavior need individual official SDK contracts.
+- Deno deployment/invocation and project/public URL propagation are verified. Full secrets/logs/runtime lifecycle parity and sandbox isolation remain open.
+- API-key-to-project mapping, shared-database account isolation, and complete control-plane SQL/database routing require further negative testing.
+- Broad feature navigation checks establish rendering and required request success; they do not prove every button, editor operation, or integration works.
+- Production-scale load, soak, backup restoration, failover, and matched reference-Supabase benchmarks are outstanding. No claim that GoLara is faster than Supabase has been established.
+- Coolify requires a named mount at `/var/lib/supadata`; a Dockerfile `VOLUME` alone creates anonymous volumes and does not preserve state across Coolify replacement. Stable now uses `poslsmflcfylqkhdl131pj6o-golara-stable-data`; prior volumes and root-only recovery snapshots are retained.
