@@ -18,10 +18,10 @@ func TestStorageRejectsCrossProjectBucket(t *testing.T) {
 	if _, err := store.Put(context.Background(), "supadata-beta", "private.txt", "text/plain", strings.NewReader("beta"), -1); err != nil {
 		t.Fatalf("seed beta object: %v", err)
 	}
-	handler := NewHandler(HandlerOptions{Store: store, APIKeys: APIKeyConfig{Anon: "anon"}})
+	handler := NewHandler(HandlerOptions{Store: store, APIKeys: APIKeyConfig{ServiceRole: "service"}})
 
 	alphaRequest := httptest.NewRequest(http.MethodGet, "/storage/v1/object/supadata-alpha/private.txt", nil)
-	alphaRequest.Header.Set("apikey", "anon")
+	alphaRequest.Header.Set("apikey", "service")
 	alphaRequest = alphaRequest.WithContext(project.WithScope(alphaRequest.Context(), project.Project{
 		ID:    "alpha",
 		Scope: project.ResourceScope{Storage: project.StorageScope{Bucket: "supadata-alpha"}},
@@ -33,7 +33,7 @@ func TestStorageRejectsCrossProjectBucket(t *testing.T) {
 	}
 
 	betaRequest := httptest.NewRequest(http.MethodGet, "/storage/v1/object/supadata-beta/private.txt", nil)
-	betaRequest.Header.Set("apikey", "anon")
+	betaRequest.Header.Set("apikey", "service")
 	betaRequest = betaRequest.WithContext(project.WithScope(betaRequest.Context(), project.Project{
 		ID:    "beta",
 		Scope: project.ResourceScope{Storage: project.StorageScope{Bucket: "supadata-beta"}},
@@ -45,7 +45,7 @@ func TestStorageRejectsCrossProjectBucket(t *testing.T) {
 	}
 
 	crossRequest := httptest.NewRequest(http.MethodGet, "/storage/v1/object/supadata-beta/private.txt", nil)
-	crossRequest.Header.Set("apikey", "anon")
+	crossRequest.Header.Set("apikey", "service")
 	crossRequest = crossRequest.WithContext(project.WithScope(crossRequest.Context(), project.Project{
 		ID:    "alpha",
 		Scope: project.ResourceScope{Storage: project.StorageScope{Bucket: "supadata-alpha"}},

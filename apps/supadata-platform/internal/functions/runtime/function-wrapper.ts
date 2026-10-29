@@ -53,7 +53,9 @@ for (const [name, values] of Object.entries(input.headers ?? {})) {
 }
 const bytes = Uint8Array.from(atob(input.body ?? ''), (character) => character.charCodeAt(0))
 const method = input.method || 'GET'
-const request = new Request(new URL(input.url, 'http://localhost'), {
+const sdkURL = Deno.env.get('SUPABASE_URL')
+if (!sdkURL) throw new Error('public project SDK URL is required')
+const request = new Request(new URL(`${sdkURL.replace(/\/$/, '')}${input.url}`), {
   method,
   headers,
   body: method === 'GET' || method === 'HEAD' ? undefined : bytes,

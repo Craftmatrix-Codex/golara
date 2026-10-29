@@ -86,3 +86,17 @@ func TestLoadRejectsInvalidProjectDatabaseRoutingConfiguration(t *testing.T) {
 		t.Fatalf("invalid routing configuration should be ignored, got %#v", cfg.ProjectDatabaseURLs)
 	}
 }
+
+func TestPublicOriginUsesHTTPSExceptExplicitLoopbackDevelopment(t *testing.T) {
+	for _, tc := range []struct{ host, want string }{
+		{"golara.craftmatrix.org", "https://golara.craftmatrix.org"},
+		{"127.0.0.1:18080", "http://127.0.0.1:18080"},
+		{"localhost:18080", "http://localhost:18080"},
+		{"[::1]:18080", "http://[::1]:18080"},
+		{"203.0.113.10:8080", "https://203.0.113.10:8080"},
+	} {
+		if got := (Config{PublicHost: tc.host}).PublicOrigin(); got != tc.want {
+			t.Fatalf("host=%s got=%s want=%s", tc.host, got, tc.want)
+		}
+	}
+}

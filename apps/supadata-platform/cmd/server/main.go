@@ -176,7 +176,7 @@ func main() {
 				"DENO_DIR":                  "/tmp/deno-cache",
 				"DENO_NO_UPDATE_CHECK":      "1",
 				"HOME":                      "/tmp",
-				"SUPABASE_URL":              "https://" + cfg.PublicHost,
+				"SUPABASE_URL":              cfg.PublicOrigin(),
 				"SUPABASE_ANON_KEY":         cfg.AnonKey,
 				"SUPABASE_SERVICE_ROLE_KEY": cfg.ServiceRoleKey,
 			},

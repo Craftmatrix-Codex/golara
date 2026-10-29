@@ -157,3 +157,42 @@ print(json.dumps({"status": 200, "headers": {}, "body": base64.b64encode(value.e
 		t.Fatalf("unexpected runtime environment: %s", result.Body)
 	}
 }
+
+func TestDenoExecutorScopesSDKEnvironmentToInvokedProject(t *testing.T) {
+	root := t.TempDir()
+	for _, id := range []string{"alpha", "beta"} {
+		dir := filepath.Join(root, id, "scope")
+		if err := os.MkdirAll(dir, 0o750); err != nil {
+			t.Fatal(err)
+		}
+		for name, content := range map[string]string{"index.ts": "fixture", "manifest.json": `{"entrypoint_path":"index.ts"}`} {
+			if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o640); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	runtimePath := filepath.Join(root, "runtime.py")
+	script := `#!/usr/bin/python3
+import base64,json,os,sys
+sys.stdin.read()
+body=json.dumps({"url":os.getenv("SUPABASE_URL"),"project":os.getenv("SUPABASE_PROJECT_REF")})
+print(json.dumps({"status":200,"headers":{},"body":base64.b64encode(body.encode()).decode()}))
+`
+	if err := os.WriteFile(runtimePath, []byte(script), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	executor := NewDenoExecutor(DenoExecutorOptions{RootDir: root, RuntimePath: runtimePath, Environment: map[string]string{"SUPABASE_URL": "https://golara.example"}})
+	for _, id := range []string{"alpha", "beta"} {
+		result, err := executor.Invoke(context.Background(), Invocation{ProjectID: id, Slug: "scope", Method: "GET", Body: strings.NewReader("")})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var actual map[string]string
+		if err := json.Unmarshal(result.Body, &actual); err != nil {
+			t.Fatal(err)
+		}
+		if actual["url"] != "https://golara.example/api/projects/"+id || actual["project"] != id {
+			t.Fatalf("project=%s environment=%v", id, actual)
+		}
+	}
+}

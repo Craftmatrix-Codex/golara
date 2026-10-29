@@ -94,7 +94,7 @@ func TestStorageUploadDownloadAndDelete(t *testing.T) {
 	}
 
 	download := httptest.NewRequest(http.MethodGet, "/storage/v1/object/avatars/user-1.txt", nil)
-	download.Header.Set("apikey", "anon")
+	download.Header.Set("apikey", "service")
 	downloadResponse := httptest.NewRecorder()
 	handler.ServeHTTP(downloadResponse, download)
 	if downloadResponse.Code != http.StatusOK || downloadResponse.Body.String() != "hello" {
@@ -148,9 +148,9 @@ func TestStorageListUsesPrefixLimitAndOffset(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	handler := NewHandler(HandlerOptions{Store: store, APIKeys: APIKeyConfig{Anon: "anon"}})
+	handler := NewHandler(HandlerOptions{Store: store, APIKeys: APIKeyConfig{ServiceRole: "service"}})
 	request := httptest.NewRequest(http.MethodPost, "/storage/v1/object/list/avatars", strings.NewReader(`{"prefix":"images/","limit":1,"offset":1}`))
-	request.Header.Set("apikey", "anon")
+	request.Header.Set("apikey", "service")
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
 	if response.Code != http.StatusOK {

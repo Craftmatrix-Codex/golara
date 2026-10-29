@@ -86,7 +86,8 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		return
 	}
 	role := h.apiKeyRole(request.Header.Get("apikey"))
-	if role == "" {
+	publicDownload := request.Method == http.MethodGet && strings.HasPrefix(request.URL.Path, "/storage/v1/object/public/")
+	if role == "" && !publicDownload {
 		writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
 	}
@@ -106,6 +107,10 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 			writeJSON(response, http.StatusNotFound, map[string]string{"error": "object not found"})
 			return
 		}
+		if !h.hasAuthenticatedAccess(request, role) {
+			writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "authentication required"})
+			return
+		}
 		h.handleList(response, request, bucket)
 		return
 	}
@@ -114,14 +119,14 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 			writeJSON(response, http.StatusBadRequest, map[string]string{"error": "invalid bucket"})
 			return
 		}
-		if !h.hasAuthenticatedMutation(request, role) {
+		if !h.hasAuthenticatedAccess(request, role) {
 			writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "authentication required"})
 			return
 		}
 		h.handleRemove(response, request, path)
 		return
 	}
-	_, bucket, key, err := parseObjectPath(path)
+	public, bucket, key, err := parseObjectPath(path)
 	if err != nil {
 		writeJSON(response, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
@@ -130,7 +135,11 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		writeJSON(response, http.StatusNotFound, map[string]string{"error": "object not found"})
 		return
 	}
-	if request.Method != http.MethodGet && !h.hasAuthenticatedMutation(request, role) {
+	if public && request.Method == http.MethodGet && !isPublicBucket(request.Context(), bucket) {
+		writeJSON(response, http.StatusNotFound, map[string]string{"error": "object not found"})
+		return
+	}
+	if !(public && request.Method == http.MethodGet) && !h.hasAuthenticatedAccess(request, role) {
 		writeJSON(response, http.StatusUnauthorized, map[string]string{"error": "authentication required"})
 		return
 	}
@@ -143,6 +152,23 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 	case http.MethodDelete:
 		h.handleDelete(response, request, bucket, key)
 	}
+}
+
+func isPublicBucket(ctx context.Context, bucket string) bool {
+	scope, ok := project.ScopeFromContext(ctx)
+	if !ok {
+		return false
+	}
+	for _, raw := range scope.Scope.Storage.Buckets {
+		var metadata struct {
+			ID     string `json:"id"`
+			Public bool   `json:"public"`
+		}
+		if json.Unmarshal(raw, &metadata) == nil && metadata.ID == bucket {
+			return metadata.Public
+		}
+	}
+	return false
 }
 
 func validateProjectBucket(ctx context.Context, bucket string) error {
@@ -338,7 +364,7 @@ func (h *Handler) handleList(response http.ResponseWriter, request *http.Request
 	writeJSON(response, http.StatusOK, items)
 }
 
-func (h *Handler) hasAuthenticatedMutation(request *http.Request, role string) bool {
+func (h *Handler) hasAuthenticatedAccess(request *http.Request, role string) bool {
 	if role == "service_role" {
 		return true
 	}

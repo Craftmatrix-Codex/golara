@@ -17,9 +17,18 @@ GRANT EXECUTE ON FUNCTION public.${rpc}(text) TO service_role;`)
   form.set('metadata', JSON.stringify({ entrypoint_path: 'index.ts', verify_jwt: false }))
   form.append(
     'file[]',
-    new Blob(['Deno.serve(async (request) => Response.json(await request.json()))\n'], {
-      type: 'application/typescript',
-    }),
+    new Blob(
+      [
+        `Deno.serve(async (request) => {
+  const body = await request.json()
+  if (body.inspectEnvironment) return Response.json({url: Deno.env.get('SUPABASE_URL'), project: Deno.env.get('SUPABASE_PROJECT_REF'), requestURL: request.url})
+  return Response.json(body)
+})\n`,
+      ],
+      {
+        type: 'application/typescript',
+      }
+    ),
     'index.ts'
   )
   const url = `${cfg.publicURL}/api/v1/projects/${cfg.project}/functions/deploy?slug=${cfg.namespace}-echo`

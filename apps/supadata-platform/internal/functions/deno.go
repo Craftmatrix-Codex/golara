@@ -118,7 +118,12 @@ func (e *DenoExecutor) Invoke(ctx context.Context, invocation Invocation) (Resul
 		e.wrapperPath, entrypoint,
 	)
 	command.Stdin = bytes.NewReader(payload)
-	command.Env = environmentList(e.environment)
+	environment := cloneEnvironment(e.environment)
+	if origin := strings.TrimRight(environment["SUPABASE_URL"], "/"); origin != "" {
+		environment["SUPABASE_URL"] = origin + "/api/projects/" + invocation.ProjectID
+	}
+	environment["SUPABASE_PROJECT_REF"] = invocation.ProjectID
+	command.Env = environmentList(environment)
 	var stdout, stderr bytes.Buffer
 	command.Stdout = &stdout
 	command.Stderr = &stderr

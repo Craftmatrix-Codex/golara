@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"strconv"
@@ -42,6 +43,15 @@ type Config struct {
 	AuthPhoneEnabled       bool
 	AuthDisableSignup      bool
 	SMSProvider            string
+}
+
+func (c Config) PublicOrigin() string {
+	origin := url.URL{Scheme: "https", Host: c.PublicHost}
+	hostname := origin.Hostname()
+	if ip := net.ParseIP(hostname); hostname == "localhost" || ip != nil && ip.IsLoopback() {
+		origin.Scheme = "http"
+	}
+	return origin.String()
 }
 
 func Load() Config {

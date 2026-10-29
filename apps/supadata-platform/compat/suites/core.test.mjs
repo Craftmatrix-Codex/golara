@@ -40,7 +40,11 @@ test('SDK Auth signup returns a user, enforces confirmation, and allows cleanup'
   const email = `golara-sdk-${marker}@example.invalid`
   const password = `Sdk-${marker}!`
   const client = sdkClient(cfg)
-  const { data, error } = await client.auth.signUp({ email, password, options: { data: { fixture: cfg.namespace } } })
+  const { data, error } = await client.auth.signUp({
+    email,
+    password,
+    options: { data: { fixture: cfg.namespace } },
+  })
   assert.equal(error, null)
   assert.equal(data.user?.email, email)
   assert.ok(data.user.id)
@@ -195,6 +199,21 @@ test('SDK Storage uploads, lists, downloads, and removes a real object', async (
     const download = await bucket.download(path)
     assert.equal(download.error, null)
     assert.equal(await download.data.text(), 'golara-sdk-content')
+    const anonymous = sdkClient(cfg).storage.from(cfg.bucket)
+    assert.ok(
+      (await anonymous.download(path)).error,
+      'Private object download must require authentication'
+    )
+    assert.ok(
+      (await anonymous.list(cfg.namespace)).error,
+      'Private object names must not be disclosed'
+    )
+    const publicURL = anonymous.getPublicUrl(path).data.publicUrl
+    assert.equal(
+      (await fetch(publicURL)).status,
+      404,
+      'Public URL must not expose a private bucket'
+    )
   } finally {
     assert.equal((await bucket.remove([path])).error, null)
   }
@@ -229,4 +248,17 @@ test('SDK Functions invokes a deployed disposable fixture', async () => {
   })
   assert.equal(error, null)
   assert.deepEqual(data, { message: 'sdk-compatible' })
+})
+
+test('SDK Functions receives the public project SDK URL and request URL', async () => {
+  const { data, error } = await admin.functions.invoke(`${cfg.namespace}-echo?check=public%20url`, {
+    body: { inspectEnvironment: true },
+  })
+  assert.equal(error, null)
+  assert.equal(data.url, cfg.sdkURL)
+  assert.equal(data.project, cfg.project)
+  assert.equal(
+    data.requestURL,
+    `${cfg.sdkURL}/functions/v1/${cfg.namespace}-echo?check=public%20url`
+  )
 })
