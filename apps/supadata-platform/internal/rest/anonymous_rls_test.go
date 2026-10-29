@@ -9,10 +9,7 @@ import (
 
 func expectRoleTransaction(mock sqlmock.Sqlmock, role string) {
 	mock.ExpectBegin()
-	for _, key := range []string{"request.jwt.claims", "request.jwt.claim.sub", "request.jwt.claim.role"} {
-		mock.ExpectQuery(regexp.QuoteMeta("select set_config($1, $2, true)")).WithArgs(key, sqlmock.AnyArg()).WillReturnRows(sqlmock.NewRows([]string{"set_config"}).AddRow(""))
-	}
-	mock.ExpectExec(regexp.QuoteMeta(`SET LOCAL ROLE "` + role + `"`)).WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec(`SELECT\s+set_config\('role'`).WithArgs(role, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).WillReturnResult(sqlmock.NewResult(0, 1))
 }
 
 func TestAnonymousSDKRequestInstallsAnonRoleBeforeExecutingSQL(t *testing.T) {

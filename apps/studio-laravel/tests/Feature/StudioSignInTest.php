@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class StudioSignInTest extends TestCase
@@ -53,5 +54,14 @@ class StudioSignInTest extends TestCase
         $response = $this->withBasicAuth('studio', 'password')->getJson('/api/platform/projects/default');
         $response->assertOk();
         $this->assertStringNotContainsString('localhost', $response->getContent());
+    }
+
+    public function test_authentication_uses_its_persistent_store_when_general_cache_is_ephemeral(): void
+    {
+        config(['studio.session_cache_store' => 'file', 'cache.default' => 'array']);
+        $this->postJson('/api/studio-auth/login', ['username' => 'studio', 'password' => 'password'])->assertOk();
+        $this->withCredentials()->withCookie(config('session.cookie'), app('session')->driver()->getId());
+        Cache::store('array')->flush();
+        $this->getJson('/api/platform/projects')->assertOk();
     }
 }

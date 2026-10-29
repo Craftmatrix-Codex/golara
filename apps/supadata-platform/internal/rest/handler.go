@@ -184,38 +184,7 @@ func (h *Handler) queryRows(ctx context.Context, claims jwt.Claims, query Query,
 		}
 	}()
 
-	claimsJSON, err := json.Marshal(claims)
-	if err != nil {
-		return nil, err
-	}
-	settings := []struct {
-		key   string
-		value string
-	}{
-		{"request.jwt.claims", string(claimsJSON)},
-		{"request.jwt.claim.sub", claims.Subject},
-		{"request.jwt.claim.role", claims.Role},
-	}
-	if scope, ok := project.ScopeFromContext(ctx); ok {
-		settings = append(settings, struct {
-			key   string
-			value string
-		}{"request.jwt.claim.project_id", scope.ID})
-	}
-	for _, setting := range settings {
-		var ignored string
-		if err := tx.QueryRowContext(ctx, "select set_config($1, $2, true)", setting.key, setting.value).Scan(&ignored); err != nil {
-			return nil, err
-		}
-	}
-	role := claims.Role
-	if role == "" {
-		role = "authenticated"
-	}
-	if role != "anon" && role != "authenticated" && role != "service_role" {
-		return nil, errors.New("unsupported database role")
-	}
-	if _, err := tx.ExecContext(ctx, `SET LOCAL ROLE "`+role+`"`); err != nil {
+	if err := database.SetRequestContext(ctx, tx, claims, "authenticated"); err != nil {
 		return nil, err
 	}
 	rows, err := tx.QueryContext(ctx, query.SQL, query.Args...)

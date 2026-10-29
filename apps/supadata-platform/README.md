@@ -201,3 +201,7 @@ Run `scripts/bootstrap-api-roles.sql` as the database administrator before contr
 Mount a named persistent volume at `SUPADATA_DATA_DIR` (`/var/lib/supadata` by default) in Coolify. A Dockerfile `VOLUME` declaration does not provide stable volume identity during Coolify replacement. The registry, SQL content, functions, telemetry database, and file sessions must survive replacement. Stable uses `poslsmflcfylqkhdl131pj6o-golara-stable-data`. Configure `APP_URL` and `SUPADATA_PUBLIC_HOST` with the real public domain, keep `SESSION_DRIVER=file`, and let Laravel use the mounted `sessions` directory.
 
 Manage build arguments manually in the Dockerfile; this image needs no runtime secrets at build time. Supply runtime environment variables through Coolify. After each rollout, read back the exact image revision and named mount, then run the official SDK and browser suites described in `compat/README.md`.
+
+The PostgreSQL pool defaults to 10 open and idle connections per unique database URL; set `SUPADATA_DATABASE_POOL_SIZE` to tune it. Connections may idle for five minutes and have a thirty-minute maximum lifetime. REST/GraphQL role and claim settings are transaction-local and installed in one parameterized SQL round trip.
+
+Studio authentication permits use `STUDIO_SESSION_CACHE_STORE=file` by default, independently of the general `CACHE_STORE`. Keep the file cache directory and sessions on the named data volume. An ephemeral general cache must not break login.

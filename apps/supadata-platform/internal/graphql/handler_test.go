@@ -20,10 +20,7 @@ func TestHandlerResolvesGraphQLThroughPgGraphql(t *testing.T) {
 
 	mock.MatchExpectationsInOrder(false)
 	mock.ExpectBegin()
-	mock.ExpectExec(`SET LOCAL ROLE "anon"`).WillReturnResult(driver.RowsAffected(0))
-	mock.ExpectQuery(`select set_config`).WillReturnRows(sqlmock.NewRows([]string{"set_config"}).AddRow(""))
-	mock.ExpectQuery(`select set_config`).WillReturnRows(sqlmock.NewRows([]string{"set_config"}).AddRow(""))
-	mock.ExpectQuery(`select set_config`).WillReturnRows(sqlmock.NewRows([]string{"set_config"}).AddRow(""))
+	mock.ExpectExec(`SELECT\s+set_config\('role'`).WithArgs("anon", sqlmock.AnyArg(), "", "").WillReturnResult(driver.RowsAffected(1))
 	mock.ExpectExec(`SAVEPOINT graphql_schema_refresh`).WillReturnResult(driver.RowsAffected(0))
 	mock.ExpectExec(`SELECT graphql\.increment_schema_version\(\)`).WillReturnResult(driver.RowsAffected(1))
 	mock.ExpectExec(`RELEASE SAVEPOINT graphql_schema_refresh`).WillReturnResult(driver.RowsAffected(0))

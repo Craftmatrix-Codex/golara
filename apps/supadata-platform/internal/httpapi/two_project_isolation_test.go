@@ -182,9 +182,5 @@ func TestTwoProjectHostnameRoutingUsesSeparateRESTDatabases(t *testing.T) {
 
 func expectProjectAnonTransaction(mock sqlmock.Sqlmock, projectID string) {
 	mock.ExpectBegin()
-	for _, key := range []string{"request.jwt.claims", "request.jwt.claim.sub", "request.jwt.claim.role"} {
-		mock.ExpectQuery(regexp.QuoteMeta("select set_config($1, $2, true)")).WithArgs(key, sqlmock.AnyArg()).WillReturnRows(sqlmock.NewRows([]string{"set_config"}).AddRow(""))
-	}
-	mock.ExpectQuery(regexp.QuoteMeta("select set_config($1, $2, true)")).WithArgs("request.jwt.claim.project_id", projectID).WillReturnRows(sqlmock.NewRows([]string{"set_config"}).AddRow(projectID))
-	mock.ExpectExec(regexp.QuoteMeta(`SET LOCAL ROLE "anon"`)).WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec(`SELECT\s+set_config\('role'`).WithArgs("anon", sqlmock.AnyArg(), "", projectID).WillReturnResult(sqlmock.NewResult(0, 1))
 }

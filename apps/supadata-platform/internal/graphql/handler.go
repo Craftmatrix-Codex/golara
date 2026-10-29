@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/database"
 	platformjwt "github.com/renzaspiras/supabase/apps/supadata-platform/internal/jwt"
 	"github.com/renzaspiras/supabase/apps/supadata-platform/internal/project"
 )
@@ -79,7 +80,11 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		writeJSON(response, http.StatusBadRequest, map[string]any{"errors": []map[string]string{{"message": "query is required"}}})
 		return
 	}
-	if h.database == nil {
+	connection := h.database
+	if scoped, ok := database.ConnectionFromContext(request.Context()); ok {
+		connection = scoped
+	}
+	if connection == nil {
 		writeJSON(response, http.StatusServiceUnavailable, map[string]any{"errors": []map[string]string{{"message": "GraphQL database unavailable"}}})
 		return
 	}
@@ -93,7 +98,7 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		extensions = json.RawMessage(`null`)
 	}
 
-	tx, err := h.database.BeginTx(request.Context(), nil)
+	tx, err := connection.BeginTx(request.Context(), nil)
 	if err != nil {
 		writeJSON(response, http.StatusServiceUnavailable, map[string]any{"errors": []map[string]string{{"message": "GraphQL database unavailable"}}})
 		return
@@ -145,31 +150,7 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 }
 
 func setRequestRole(ctx context.Context, tx *sql.Tx, claims platformjwt.Claims, apiKeyRole string) error {
-	role := claims.Role
-	if role == "" {
-		role = apiKeyRole
-	}
-	if role != "anon" && role != "authenticated" && role != "service_role" {
-		return errors.New("unsupported database role")
-	}
-	if _, err := tx.ExecContext(ctx, `SET LOCAL ROLE "`+role+`"`); err != nil {
-		return err
-	}
-	claimsJSON, err := json.Marshal(claims)
-	if err != nil {
-		return err
-	}
-	for key, value := range map[string]string{
-		"request.jwt.claims":     string(claimsJSON),
-		"request.jwt.claim.role": role,
-		"request.jwt.claim.sub":  claims.Subject,
-	} {
-		var ignored string
-		if err := tx.QueryRowContext(ctx, "select set_config($1, $2, true)", key, value).Scan(&ignored); err != nil {
-			return err
-		}
-	}
-	return nil
+	return database.SetRequestContext(ctx, tx, claims, apiKeyRole)
 }
 
 func (h *Handler) accessClaims(request *http.Request, apiKeyRole string) (platformjwt.Claims, error) {

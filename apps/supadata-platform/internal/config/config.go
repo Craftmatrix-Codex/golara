@@ -28,6 +28,7 @@ type Config struct {
 	StorageRegion          string
 	StorageUseSSL          bool
 	DatabaseURL            string
+	DatabasePoolSize       int
 	ProjectDatabaseURLs    map[string]string
 	PublicDatabaseHost     string
 	PublicDatabasePort     int
@@ -72,6 +73,7 @@ func Load() Config {
 		StorageRegion:          envString("SUPADATA_STORAGE_REGION", "us-east-1"),
 		StorageUseSSL:          envBool("SUPADATA_STORAGE_USE_SSL", false),
 		DatabaseURL:            os.Getenv("DATABASE_URL"),
+		DatabasePoolSize:       envInt("SUPADATA_DATABASE_POOL_SIZE", 10),
 		ProjectDatabaseURLs:    envStringMap("SUPADATA_PROJECT_DATABASE_URLS"),
 		PublicDatabaseHost:     os.Getenv("SUPADATA_PUBLIC_DATABASE_HOST"),
 		PublicDatabasePort:     envInt("SUPADATA_PUBLIC_DATABASE_PORT", 0),

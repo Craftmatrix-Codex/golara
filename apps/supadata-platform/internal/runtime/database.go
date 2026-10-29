@@ -45,6 +45,7 @@ func OpenProjectDatabases(ctx context.Context, cfg config.Config, projects []pro
 				connections.Close()
 				return nil, fmt.Errorf("open database for project %q: %w", value.ID, err)
 			}
+			configurePool(connection, cfg.DatabasePoolSize)
 			pingContext, cancel := context.WithTimeout(ctx, 10*time.Second)
 			err = connection.PingContext(pingContext)
 			cancel()
@@ -70,6 +71,7 @@ func OpenProjectDatabases(ctx context.Context, cfg config.Config, projects []pro
 		if openErr != nil {
 			return nil, fmt.Errorf("open default database: %w", openErr)
 		}
+		configurePool(connection, cfg.DatabasePoolSize)
 		pingContext, cancel := context.WithTimeout(ctx, 10*time.Second)
 		pingErr := connection.PingContext(pingContext)
 		cancel()
@@ -81,6 +83,16 @@ func OpenProjectDatabases(ctx context.Context, cfg config.Config, projects []pro
 		connections.all = append(connections.all, connection)
 	}
 	return connections, nil
+}
+
+func configurePool(connection *sql.DB, size int) {
+	if size <= 0 {
+		size = 10
+	}
+	connection.SetMaxOpenConns(size)
+	connection.SetMaxIdleConns(size)
+	connection.SetConnMaxIdleTime(5 * time.Minute)
+	connection.SetConnMaxLifetime(30 * time.Minute)
 }
 
 func (c *DatabaseConnections) Close() {

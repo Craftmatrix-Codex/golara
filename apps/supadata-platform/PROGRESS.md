@@ -10,7 +10,7 @@ The user authorized direct Stable deployment and iterative local/live testing. S
 - `737dd97145` enforces private Storage download/list access, checks public bucket metadata, and gives functions the invoked project's public SDK and request URLs. Coolify deployment `wkqcizzz3ltxwfpaz1w1c6eb` is healthy.
 - **13/13 official SDK contracts pass on Stable** with unmodified `@supabase/supabase-js` **2.118.0**. They cover representative Auth, database/RPC, rollback/RLS, Storage privacy/bytes, Realtime subscription, and real Deno invocation, including query-string/public URL propagation.
 - Desktop/mobile sign-in, authenticated Studio navigation, metadata, and logout passed live. An expanded navigation run passed 14/15 cases; its desktop failure was `net::ERR_NETWORK_CHANGED` on the test machine and needs a clean rerun. All 12 feature navigation cases passed live.
-- Go tests, race checks, vet, and stripped builds pass. Laravel passes **42 tests / 241 assertions**. Studio's production client build, smoke server, and typecheck pass. Changed root files have no ESLint errors and one existing `no-explicit-any` warning.
+- Go tests, race checks, vet, and stripped builds pass. Laravel passes **43 tests / 243 assertions**. Studio's production client build, smoke server, and typecheck pass. Changed root files have no ESLint errors and one existing `no-explicit-any` warning.
 - Stable uses the named volume `poslsmflcfylqkhdl131pj6o-golara-stable-data`. Prior data was recovered; old anonymous volumes and root-only snapshots are retained. The actual running container's mount was read back.
 - Runtime credentials are no longer injected as Dockerfile build arguments. Selected credential values were absent from the running image's history.
 - The live trusted `service_role` was missing `BYPASSRLS`; its standard Supabase role behavior is restored. Anonymous/authenticated roles retain RLS. Installation SQL is in `scripts/bootstrap-api-roles.sql`.
@@ -29,3 +29,7 @@ Expand the versioned contract matrix, repair each unsupported behavior, exercise
 ## Completion rule
 
 Do not mark the platform complete while required compatibility entries are partial, unknown, unsupported, or untested. Keep direct Stable deployment evidence, rollback information, and local/live results tied to exact revisions.
+
+The full native Coolify image at Stable b7c7835aa8 is healthy and measures **410,246,911 bytes**, down from **753,295,236 bytes** at 737dd97145 on the same server (**45.5% smaller**). All 13 official SDK cases pass live. All 15 browser cases pass in an isolated browser container after correcting the production cache override. The running cache correction is being made durable in source/config; the explicit authentication store now has a regression test independent of general array-cache behavior.
+
+The next request-path slice bounds and retains pooled connections, batches transaction-local role/claim setup, verifies reset after commit and rollback on a reused PostgreSQL connection, and makes GraphQL honor its scoped database connection. Local official SDK/browser regressions and PostgreSQL integration tests pass. Deployment verification remains required.

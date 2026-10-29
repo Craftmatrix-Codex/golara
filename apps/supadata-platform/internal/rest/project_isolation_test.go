@@ -27,11 +27,7 @@ func TestProjectTokenCannotCrossProjectBoundary(t *testing.T) {
 	handler := NewHandler(database, HandlerOptions{APIKeys: APIKeyConfig{Anon: "anon-key"}, JWTSecret: secret})
 
 	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta("select set_config($1, $2, true)")).WithArgs("request.jwt.claims", sqlmock.AnyArg()).WillReturnRows(sqlmock.NewRows([]string{"set_config"}).AddRow("claims"))
-	mock.ExpectQuery(regexp.QuoteMeta("select set_config($1, $2, true)")).WithArgs("request.jwt.claim.sub", "user-id").WillReturnRows(sqlmock.NewRows([]string{"set_config"}).AddRow("user-id"))
-	mock.ExpectQuery(regexp.QuoteMeta("select set_config($1, $2, true")).WithArgs("request.jwt.claim.role", "authenticated").WillReturnRows(sqlmock.NewRows([]string{"set_config"}).AddRow("authenticated"))
-	mock.ExpectQuery(regexp.QuoteMeta("select set_config($1, $2, true")).WithArgs("request.jwt.claim.project_id", "alpha").WillReturnRows(sqlmock.NewRows([]string{"set_config"}).AddRow("alpha"))
-	mock.ExpectExec(regexp.QuoteMeta(`SET LOCAL ROLE "authenticated"`)).WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec(`SELECT\s+set_config\('role'`).WithArgs("authenticated", sqlmock.AnyArg(), "user-id", "alpha").WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "public"."todos"`)).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	mock.ExpectCommit()
 
